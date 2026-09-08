@@ -51,7 +51,6 @@ EMOJI_INFO = "5285430309720966085"
 EMOJI_MONEY = "5318970495314436977"
 EMOJI_USER = "5316970857325687050"
 EMOJI_DONE = "5285430309720966085"
-EMOJI_POP = "5316970857325687050"
 
 logger.info("🚀 БОТ ЗАПУЩЕН (ТОЛЬКО ПРЕМИУМ-ЭМОДЗИ)")
 
@@ -142,7 +141,6 @@ def main_menu():
         ]
     }
 
-# ===== МЕНЮ UC =====
 def uc_cart_menu():
     return {
         "inline_keyboard": [
@@ -158,7 +156,6 @@ def uc_cart_menu():
         ]
     }
 
-# ===== МЕНЮ ПОПУЛЯРНОСТИ =====
 def popularity_cart_menu():
     return {
         "inline_keyboard": [
@@ -326,19 +323,17 @@ def handle_update(update):
                 user_data[user_id]["temp"]["pubg_id"] = pubg_id
                 user_data[user_id]["step"] = "main"
                 
-                # Определяем что заказывали: UC или ПП
                 order_type = user_data[user_id]["temp"].get("order_type", "UC")
                 
                 if order_type == "UC":
                     cart = user_data[user_id]["uc_cart"]
                     total_uc, total_price = get_uc_total(cart)
                     cart_text = get_uc_cart_text(cart)
-                    item_name = f"{total_uc} UC"
                 else:
                     cart = user_data[user_id]["pop_cart"]
                     total_pop, total_price = get_pop_total(cart)
                     cart_text = get_pop_cart_text(cart)
-                    item_name = f"{total_pop} ПП"
+                    total_uc = total_pop
                 
                 username = get_user_name(chat_id)
                 user_mention = f'<a href="tg://user?id={chat_id}">{username}</a>'
@@ -355,7 +350,6 @@ def handle_update(update):
                 
                 send_message(OWNER_ID, owner_text, owner_done_menu(f"{chat_id}_{int(time.time())}"), parse_mode="HTML")
                 
-                # Очищаем соответствующую корзину
                 if order_type == "UC":
                     user_data[user_id]["uc_cart"] = {}
                 else:
@@ -385,7 +379,7 @@ def handle_update(update):
             
             logger.info(f"🖱 Нажата кнопка: {data}")
             
-            # ---- НАЗАД (С ФОТО) ----
+            # ---- НАЗАД ----
             if data == "back_to_main":
                 try:
                     send_photo(
@@ -538,7 +532,7 @@ def handle_update(update):
                 answer_callback(cb_id)
                 return
             
-            # ---- ОПЛАТА (ОБЩАЯ ДЛЯ UC И ПП) ----
+            # ---- ОПЛАТА ----
             if data == "i_paid":
                 order_type = user_data[user_id]["temp"].get("order_type", "UC")
                 
@@ -546,12 +540,11 @@ def handle_update(update):
                     cart = user_data[user_id]["uc_cart"]
                     total_uc, total_price = get_uc_total(cart)
                     cart_text = get_uc_cart_text(cart)
-                    item_name = f"{total_uc} UC"
                 else:
                     cart = user_data[user_id]["pop_cart"]
                     total_pop, total_price = get_pop_total(cart)
                     cart_text = get_pop_cart_text(cart)
-                    item_name = f"{total_pop} ПП"
+                    total_uc = total_pop
                 
                 username = get_user_name(chat_id)
                 user_mention = f'<a href="tg://user?id={chat_id}">{username}</a>'
@@ -560,7 +553,7 @@ def handle_update(update):
                 orders[order_id] = {
                     "user_id": chat_id,
                     "cart": cart,
-                    "total_uc": total_uc if order_type == "UC" else total_pop,
+                    "total_uc": total_uc,
                     "total_price": total_price,
                     "username": username,
                     "order_type": order_type,
@@ -678,7 +671,7 @@ def handle_update(update):
                 )
                 return
             
-            # ---- ВЫПОЛНЕНИЕ ЗАКАЗА ВЛАДЕЛЬЦЕМ ----
+            # ---- ВЫПОЛНЕНИЕ ЗАКАЗА ----
             if data.startswith("order_done_"):
                 order_id = data.replace("order_done_", "")
                 order = orders.get(order_id)
