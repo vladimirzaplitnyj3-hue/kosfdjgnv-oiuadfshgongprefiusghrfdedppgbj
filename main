@@ -22,7 +22,7 @@ BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 PHOTO_URL = "https://i.ibb.co/67pwkmfb/IMG-3088.jpg"
 OWNER_ID = 6555825110
 
-# ========== ТОЛЬКО РАБОЧИЕ ID ПРЕМИУМ-ЭМОДЗИ ==========
+# ========== ВСЕ ID ПРЕМИУМ-ЭМОДЗИ ==========
 E_UC = "5318970495314436977"
 E_STAR = "5316970857325687050"
 E_HEART = "5346301287774323405"
@@ -40,12 +40,22 @@ E_CARD = "5310169226856644648"
 E_PHONE = "5310076249404621168"
 E_CHECK = "5285430309720966085"
 E_CROSS = "5285032475490273112"
+E_CART = "5310169226856644648"
+E_BACK = "5310076249404621168"
+E_INFO = "5310080279764762661"
+E_WELCOME = "5318970495314436977"  # ДОБАВЛЕНО!
+E_WARNING = "5310076249404621168"
+E_TIME = "5327866716909229540"
+E_MONEY = "5318970495314436977"
+E_GEAR = "5310169226856644648"
+E_TRASH = "5285032475490273112"
+E_ORDER = "5310080279764762661"
 
 logger.info("🚀 БОТ ЗАПУЩЕН")
 
 # ========== ХРАНИЛИЩЕ ==========
-user_data = {}      # {user_id: {"cart": {}, "step": "", "temp": {}, "last_message_id": None}}
-orders = {}         # {order_id: {...}}
+user_data = {}
+orders = {}
 
 # ========== ФУНКЦИИ ==========
 def api_request(method, payload):
@@ -64,23 +74,23 @@ def send_message(chat_id, text, reply_markup=None, parse_mode="HTML"):
     payload = {"chat_id": chat_id, "text": text, "parse_mode": parse_mode}
     if reply_markup:
         payload["reply_markup"] = json.dumps(reply_markup)
+    
+    # Удаляем предыдущее сообщение
+    user_id = str(chat_id)
+    if user_id in user_data and user_data[user_id].get("last_message_id"):
+        try:
+            delete_message(chat_id, user_data[user_id]["last_message_id"])
+        except:
+            pass
+    
     result = api_request("sendMessage", payload)
     
-    # Сохраняем ID отправленного сообщения для удаления
+    # Сохраняем новое сообщение
     if result.get("ok"):
         message_id = result.get("result", {}).get("message_id")
         if message_id:
-            user_id = str(chat_id)
             if user_id not in user_data:
                 user_data[user_id] = {"cart": {}, "step": "main", "temp": {}, "last_message_id": None}
-            
-            # Удаляем предыдущее сообщение пользователя
-            if user_data[user_id].get("last_message_id"):
-                try:
-                    delete_message(chat_id, user_data[user_id]["last_message_id"])
-                except:
-                    pass
-            
             user_data[user_id]["last_message_id"] = message_id
     
     return result
@@ -91,21 +101,22 @@ def send_photo(chat_id, photo, caption=None, reply_markup=None, parse_mode="HTML
         payload["caption"] = caption
     if reply_markup:
         payload["reply_markup"] = json.dumps(reply_markup)
+    
+    # Удаляем предыдущее сообщение
+    user_id = str(chat_id)
+    if user_id in user_data and user_data[user_id].get("last_message_id"):
+        try:
+            delete_message(chat_id, user_data[user_id]["last_message_id"])
+        except:
+            pass
+    
     result = api_request("sendPhoto", payload)
     
     if result.get("ok"):
         message_id = result.get("result", {}).get("message_id")
         if message_id:
-            user_id = str(chat_id)
             if user_id not in user_data:
                 user_data[user_id] = {"cart": {}, "step": "main", "temp": {}, "last_message_id": None}
-            
-            if user_data[user_id].get("last_message_id"):
-                try:
-                    delete_message(chat_id, user_data[user_id]["last_message_id"])
-                except:
-                    pass
-            
             user_data[user_id]["last_message_id"] = message_id
     
     return result
@@ -162,14 +173,14 @@ def format_cart_text(cart):
             text += f'<tg-emoji emoji-id="{E_UC}">💵</tg-emoji> {k} UC x {v} = {price * v}₽\n'
     
     total_uc, total_price = get_cart_total(cart)
-    text += f'\n<tg-emoji emoji-id="{E_UC}">💰</tg-emoji> Итого: {total_uc} UC — {total_price}₽'
+    text += f'\n<tg-emoji emoji-id="{E_MONEY}">💰</tg-emoji> Итого: {total_uc} UC — {total_price}₽'
     return text
 
 # ========== ЦЕНЫ ==========
 UC_PRICES = {"60": 75, "325": 390, "660": 760, "1800": 1990, "3850": 4000, "8100": 8630}
 POPULARITY_PRICES = {"10000": 176, "20000": 307, "30000": 439, "40000": 578, "50000": 715, "60000": 857, "70000": 989, "100000": 1375, "150000": 1994, "200000": 2612, "500000": 6272}
 
-# ========== КЛАВИАТУРЫ (ТОЛЬКО РАБОЧИЕ ПРЕМИУМ-ЭМОДЗИ) ==========
+# ========== КЛАВИАТУРЫ ==========
 
 def main_menu():
     return {
@@ -190,7 +201,7 @@ def cart_menu():
             [{"text": "3850 UC - 4000₽", "callback_data": "add_3850", "style": "success", "icon_custom_emoji_id": E_UC}],
             [{"text": "8100 UC - 8630₽", "callback_data": "add_8100", "style": "success", "icon_custom_emoji_id": E_UC}],
             [{"text": "Оформить заказ", "callback_data": "checkout", "style": "success", "icon_custom_emoji_id": E_CHECK}],
-            [{"text": "Очистить корзину", "callback_data": "clear_cart", "style": "danger", "icon_custom_emoji_id": E_CROSS}],
+            [{"text": "Очистить корзину", "callback_data": "clear_cart", "style": "danger", "icon_custom_emoji_id": E_TRASH}],
             [{"text": "Назад", "callback_data": "back_to_main", "style": "primary"}]
         ]
     }
@@ -245,7 +256,7 @@ def after_payment_menu():
         ]
     }
 
-# ========== ОСНОВНАЯ ОБРАБОТКА ==========
+# ========== ОБРАБОТКА ==========
 
 def handle_update(update):
     try:
@@ -270,7 +281,8 @@ def handle_update(update):
                         ),
                         reply_markup=main_menu()
                     )
-                except:
+                except Exception as e:
+                    logger.error(f"Ошибка отправки фото: {e}")
                     send_message(
                         chat_id,
                         f'<tg-emoji emoji-id="{E_WELCOME}">👋</tg-emoji> '
@@ -306,11 +318,11 @@ def handle_update(update):
                 
                 order_id = f"{chat_id}_{int(time.time())}"
                 owner_text = (
-                    f'<tg-emoji emoji-id="{E_CART}">📦</tg-emoji> <b>НОВЫЙ ЗАКАЗ</b>\n\n'
+                    f'<tg-emoji emoji-id="{E_ORDER}">📦</tg-emoji> <b>НОВЫЙ ЗАКАЗ</b>\n\n'
                     f'<tg-emoji emoji-id="{E_STAR}">👤</tg-emoji> Покупатель: {username}\n'
                     f'<tg-emoji emoji-id="{E_PIN}">🆔</tg-emoji> PUBG ID: {pubg_id}\n'
                     f'<tg-emoji emoji-id="{E_CART}">📦</tg-emoji> Товары:\n{cart_text}\n'
-                    f'<tg-emoji emoji-id="{E_UC}">💰</tg-emoji> Итого: {total_price}₽'
+                    f'<tg-emoji emoji-id="{E_MONEY}">💰</tg-emoji> Итого: {total_price}₽'
                 )
                 
                 send_message(OWNER_ID, owner_text, owner_done_menu(order_id), parse_mode="HTML")
@@ -382,7 +394,7 @@ def handle_update(update):
                 user_data[user_id]["cart"] = {}
                 send_message(
                     chat_id,
-                    f'<tg-emoji emoji-id="{E_CART}">🛒</tg-emoji> Корзина очищена!',
+                    f'<tg-emoji emoji-id="{E_TRASH}">🗑</tg-emoji> Корзина очищена!',
                     cart_menu()
                 )
                 return
@@ -409,7 +421,7 @@ def handle_update(update):
                 payment_text = (
                     f'<tg-emoji emoji-id="{E_CARD}">💳</tg-emoji> <b>Оплата заказа</b>\n\n'
                     f'<tg-emoji emoji-id="{E_CART}">📦</tg-emoji> Товары:\n{cart_text}\n'
-                    f'<tg-emoji emoji-id="{E_UC}">💰</tg-emoji> Итого: {total_price}₽\n\n'
+                    f'<tg-emoji emoji-id="{E_MONEY}">💰</tg-emoji> Итого: {total_price}₽\n\n'
                     f'<b>Способы оплаты:</b>\n\n'
                     f'<tg-emoji emoji-id="{E_CARD}">💳</tg-emoji> <b>Карта Сбербанк:</b>\n'
                     f'<code>2202208555983213</code>\n\n'
@@ -461,10 +473,10 @@ def handle_update(update):
                 }
                 
                 owner_text = (
-                    f'<tg-emoji emoji-id="{E_UC}">💰</tg-emoji> <b>ПОДТВЕРЖДЕНИЕ ОПЛАТЫ</b>\n\n'
+                    f'<tg-emoji emoji-id="{E_MONEY}">💰</tg-emoji> <b>ПОДТВЕРЖДЕНИЕ ОПЛАТЫ</b>\n\n'
                     f'<tg-emoji emoji-id="{E_STAR}">👤</tg-emoji> Покупатель: {username}\n'
                     f'<tg-emoji emoji-id="{E_CART}">📦</tg-emoji> Товары:\n{cart_text}\n'
-                    f'<tg-emoji emoji-id="{E_UC}">💰</tg-emoji> Итого: {total_price}₽'
+                    f'<tg-emoji emoji-id="{E_MONEY}">💰</tg-emoji> Итого: {total_price}₽'
                 )
                 
                 send_message(OWNER_ID, owner_text, owner_confirm_menu(order_id), parse_mode="HTML")
@@ -507,7 +519,7 @@ def handle_update(update):
                     user_id,
                     f'<tg-emoji emoji-id="{E_CHECK}">✅</tg-emoji> <b>Оплата подтверждена!</b>\n\n'
                     f'<tg-emoji emoji-id="{E_CART}">📦</tg-emoji> Товар: {total_uc} UC\n'
-                    f'<tg-emoji emoji-id="{E_UC}">💰</tg-emoji> Сумма: {total_price}₽\n\n'
+                    f'<tg-emoji emoji-id="{E_MONEY}">💰</tg-emoji> Сумма: {total_price}₽\n\n'
                     f'<tg-emoji emoji-id="{E_PIN}">🆔</tg-emoji> <b>Введите ваш PUBG ID:</b>\n'
                     f'<tg-emoji emoji-id="{E_WARNING}">⚠️</tg-emoji> Указывайте ID осторожно!',
                     after_payment_menu(),
@@ -618,7 +630,7 @@ def handle_update(update):
                 )
                 return
             
-            # ---- ИНФОРМАЦИЯ (БЕЗ НЕРАБОЧИХ ЭМОДЗИ) ----
+            # ---- ИНФОРМАЦИЯ ----
             if data == "info":
                 text = (
                     f'<tg-emoji emoji-id="{E_INFO}">ℹ️</tg-emoji> KRANZAYY UC BOT\n\n'
@@ -652,6 +664,7 @@ def main():
     logger.info("=" * 50)
     logger.info("🚀 БОТ ЗАПУЩЕН")
     logger.info(f"👤 Владелец: {OWNER_ID}")
+    logger.info("💎 Только премиум-эмодзи")
     logger.info("=" * 50)
     
     while True:
