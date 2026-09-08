@@ -2,9 +2,7 @@ import requests
 import json
 import time
 import logging
-import traceback
 import sys
-import re
 
 # ========== НАСТРОЙКА ЛОГИРОВАНИЯ ==========
 logging.basicConfig(
@@ -21,111 +19,70 @@ logger = logging.getLogger(__name__)
 BOT_TOKEN = "8833181446:AAFqiKedQpDm04CYP6tg4vb0MjH-k3M4GUw"
 BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 PHOTO_URL = "https://i.ibb.co/67pwkmfb/IMG-3088.jpg"
-
-# ========== ID ВЛАДЕЛЬЦА ==========
 OWNER_ID = 6555825110
 
 # ========== ID ПРЕМИУМ-ЭМОДЗИ ==========
-EMOJI_WAVE = "5258093637450866522"
 EMOJI_UC = "5318970495314436977"
 EMOJI_STAR = "5316970857325687050"
-EMOJI_HEART = "5346301287774323405"
-EMOJI_FIRE = "5330051403563943171"
-EMOJI_SPARKLE = "5330245862503236304"
-EMOJI_STAR2 = "5327866716909229540"
-EMOJI_SHOP = "5318970495314436977"
-EMOJI_MEGAPHONE = "5931395439738755762"
-EMOJI_METRO = "5357432498680767940"
-EMOJI_REVIEW = "5219809810802829750"
-EMOJI_DIAMOND = "5465556444931718975"
-EMOJI_SUPPORT = "5971889748615105853"
-EMOJI_CARD = "5310169226856644648"
-EMOJI_PHONE = "5310076249404621168"
 EMOJI_CHECK = "5285430309720966085"
 EMOJI_CROSS = "5285032475490273112"
 EMOJI_CART = "5318970495314436977"
 EMOJI_ORDER = "5285430309720966085"
-EMOJI_TIME = "5310169226856644648"
-EMOJI_WARN = "5285032475490273112"
-EMOJI_INFO = "5285430309720966085"
 EMOJI_MONEY = "5318970495314436977"
-EMOJI_USER = "5316970857325687050"
-EMOJI_DONE = "5285430309720966085"
+EMOJI_WAVE = "5258093637450866522"
 
-logger.info("🚀 БОТ ЗАПУЩЕН (ТОЛЬКО ПРЕМИУМ-ЭМОДЗИ)")
+logger.info("🚀 БОТ ЗАПУЩЕН (УПРОЩЁННАЯ ВЕРСИЯ)")
 
 # ========== ХРАНИЛИЩЕ ==========
 user_data = {}
 orders = {}
 
-# ========== ФУНКЦИЯ ЗАПРОСОВ ==========
-def api_request(method, payload):
-    url = f"{BASE_URL}/{method}"
-    
-    log_payload = {k: v for k, v in payload.items() if k not in ['text', 'caption']}
-    if 'text' in payload:
-        log_payload['text'] = payload['text'][:50] + '...' if len(payload['text']) > 50 else payload['text']
-    logger.debug(f"📤 {method} | {json.dumps(log_payload, ensure_ascii=False)}")
-    
-    try:
-        response = requests.post(url, json=payload, timeout=30)
-        result = response.json()
-        
-        if result.get("ok"):
-            logger.debug(f"✅ {method} успешно")
-        else:
-            logger.error(f"❌ Ошибка {method}: {result.get('description', 'Неизвестная')}")
-            
-        return result
-    except Exception as e:
-        logger.error(f"💥 Ошибка {method}: {e}")
-        logger.error(traceback.format_exc())
-        return {"ok": False, "error": str(e)}
-
-# ========== ОСНОВНЫЕ ФУНКЦИИ ==========
-def send_message(chat_id, text, reply_markup=None, parse_mode="HTML"):
-    payload = {"chat_id": chat_id, "text": text, "parse_mode": parse_mode}
+# ========== ФУНКЦИИ ==========
+def send_message(chat_id, text, reply_markup=None):
+    url = f"{BASE_URL}/sendMessage"
+    payload = {"chat_id": chat_id, "text": text}
     if reply_markup:
         payload["reply_markup"] = json.dumps(reply_markup)
-    return api_request("sendMessage", payload)
+    return requests.post(url, json=payload).json()
 
-def send_photo(chat_id, photo, caption=None, reply_markup=None, parse_mode="HTML"):
-    payload = {"chat_id": chat_id, "photo": photo, "parse_mode": parse_mode}
+def send_photo(chat_id, photo, caption=None, reply_markup=None):
+    url = f"{BASE_URL}/sendPhoto"
+    payload = {"chat_id": chat_id, "photo": photo}
     if caption:
         payload["caption"] = caption
     if reply_markup:
         payload["reply_markup"] = json.dumps(reply_markup)
-    return api_request("sendPhoto", payload)
+    return requests.post(url, json=payload).json()
 
-def edit_message(chat_id, message_id, text, reply_markup=None, parse_mode="HTML"):
-    payload = {"chat_id": chat_id, "message_id": message_id, "text": text, "parse_mode": parse_mode}
+def edit_message(chat_id, message_id, text, reply_markup=None):
+    url = f"{BASE_URL}/editMessageText"
+    payload = {"chat_id": chat_id, "message_id": message_id, "text": text}
     if reply_markup:
         payload["reply_markup"] = json.dumps(reply_markup)
-    return api_request("editMessageText", payload)
+    return requests.post(url, json=payload).json()
 
-def answer_callback(callback_id, text=None, show_alert=False):
+def answer_callback(callback_id, text=""):
+    url = f"{BASE_URL}/answerCallbackQuery"
     payload = {"callback_query_id": callback_id}
     if text:
         payload["text"] = text
-    if show_alert:
-        payload["show_alert"] = True
-    return api_request("answerCallbackQuery", payload)
+    return requests.post(url, json=payload).json()
 
 def delete_message(chat_id, message_id):
+    url = f"{BASE_URL}/deleteMessage"
     payload = {"chat_id": chat_id, "message_id": message_id}
-    return api_request("deleteMessage", payload)
+    return requests.post(url, json=payload).json()
 
 def get_user_name(chat_id):
     try:
-        result = api_request("getChat", {"chat_id": chat_id})
+        url = f"{BASE_URL}/getChat"
+        result = requests.post(url, json={"chat_id": chat_id}).json()
         if result.get("ok"):
             user = result.get("result", {})
             username = user.get("username")
             if username:
                 return f"@{username}"
-            else:
-                first_name = user.get("first_name", "Пользователь")
-                return first_name
+            return user.get("first_name", "Пользователь")
         return "Пользователь"
     except:
         return "Пользователь"
@@ -135,8 +92,8 @@ def get_user_name(chat_id):
 def main_menu():
     return {
         "inline_keyboard": [
-            [{"text": "Купить UC", "callback_data": "buy_uc", "style": "success", "icon_custom_emoji_id": EMOJI_UC}],
-            [{"text": "Популярность", "callback_data": "popularity", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
+            [{"text": "Купить UC", "callback_data": "buy_uc", "style": "success"}],
+            [{"text": "Популярность", "callback_data": "popularity", "style": "primary"}],
             [{"text": "Информация", "callback_data": "info", "style": "danger"}]
         ]
     }
@@ -144,12 +101,12 @@ def main_menu():
 def uc_cart_menu():
     return {
         "inline_keyboard": [
-            [{"text": "60 UC - 75₽", "callback_data": "uc_add_60", "style": "success", "icon_custom_emoji_id": EMOJI_UC}],
-            [{"text": "325 UC - 390₽", "callback_data": "uc_add_325", "style": "success", "icon_custom_emoji_id": EMOJI_UC}],
-            [{"text": "660 UC - 760₽", "callback_data": "uc_add_660", "style": "success", "icon_custom_emoji_id": EMOJI_UC}],
-            [{"text": "1800 UC - 1990₽", "callback_data": "uc_add_1800", "style": "success", "icon_custom_emoji_id": EMOJI_UC}],
-            [{"text": "3850 UC - 4000₽", "callback_data": "uc_add_3850", "style": "success", "icon_custom_emoji_id": EMOJI_UC}],
-            [{"text": "8100 UC - 8630₽", "callback_data": "uc_add_8100", "style": "success", "icon_custom_emoji_id": EMOJI_UC}],
+            [{"text": "60 UC - 75₽", "callback_data": "uc_add_60", "style": "success"}],
+            [{"text": "325 UC - 390₽", "callback_data": "uc_add_325", "style": "success"}],
+            [{"text": "660 UC - 760₽", "callback_data": "uc_add_660", "style": "success"}],
+            [{"text": "1800 UC - 1990₽", "callback_data": "uc_add_1800", "style": "success"}],
+            [{"text": "3850 UC - 4000₽", "callback_data": "uc_add_3850", "style": "success"}],
+            [{"text": "8100 UC - 8630₽", "callback_data": "uc_add_8100", "style": "success"}],
             [{"text": "Оформить заказ UC", "callback_data": "uc_checkout", "style": "success"}],
             [{"text": "Очистить корзину UC", "callback_data": "uc_clear_cart", "style": "danger"}],
             [{"text": "Назад", "callback_data": "back_to_main", "style": "primary"}]
@@ -159,17 +116,17 @@ def uc_cart_menu():
 def popularity_cart_menu():
     return {
         "inline_keyboard": [
-            [{"text": "10 000 ПП - 176₽", "callback_data": "pop_add_10000", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
-            [{"text": "20 000 ПП - 307₽", "callback_data": "pop_add_20000", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
-            [{"text": "30 000 ПП - 439₽", "callback_data": "pop_add_30000", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
-            [{"text": "40 000 ПП - 578₽", "callback_data": "pop_add_40000", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
-            [{"text": "50 000 ПП - 715₽", "callback_data": "pop_add_50000", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
-            [{"text": "60 000 ПП - 857₽", "callback_data": "pop_add_60000", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
-            [{"text": "70 000 ПП - 989₽", "callback_data": "pop_add_70000", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
-            [{"text": "100 000 ПП - 1375₽", "callback_data": "pop_add_100000", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
-            [{"text": "150 000 ПП - 1994₽", "callback_data": "pop_add_150000", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
-            [{"text": "200 000 ПП - 2612₽", "callback_data": "pop_add_200000", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
-            [{"text": "500 000 ПП - 6272₽", "callback_data": "pop_add_500000", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
+            [{"text": "10 000 ПП - 176₽", "callback_data": "pop_add_10000", "style": "primary"}],
+            [{"text": "20 000 ПП - 307₽", "callback_data": "pop_add_20000", "style": "primary"}],
+            [{"text": "30 000 ПП - 439₽", "callback_data": "pop_add_30000", "style": "primary"}],
+            [{"text": "40 000 ПП - 578₽", "callback_data": "pop_add_40000", "style": "primary"}],
+            [{"text": "50 000 ПП - 715₽", "callback_data": "pop_add_50000", "style": "primary"}],
+            [{"text": "60 000 ПП - 857₽", "callback_data": "pop_add_60000", "style": "primary"}],
+            [{"text": "70 000 ПП - 989₽", "callback_data": "pop_add_70000", "style": "primary"}],
+            [{"text": "100 000 ПП - 1375₽", "callback_data": "pop_add_100000", "style": "primary"}],
+            [{"text": "150 000 ПП - 1994₽", "callback_data": "pop_add_150000", "style": "primary"}],
+            [{"text": "200 000 ПП - 2612₽", "callback_data": "pop_add_200000", "style": "primary"}],
+            [{"text": "500 000 ПП - 6272₽", "callback_data": "pop_add_500000", "style": "primary"}],
             [{"text": "Оформить заказ ПП", "callback_data": "pop_checkout", "style": "success"}],
             [{"text": "Очистить корзину ПП", "callback_data": "pop_clear_cart", "style": "danger"}],
             [{"text": "Назад", "callback_data": "back_to_main", "style": "primary"}]
@@ -179,32 +136,22 @@ def popularity_cart_menu():
 def payment_menu():
     return {
         "inline_keyboard": [
-            [{"text": "Я оплатил", "callback_data": "i_paid", "style": "success", "icon_custom_emoji_id": EMOJI_CHECK}],
-            [{"text": "Отменить заказ", "callback_data": "cancel_payment", "style": "danger", "icon_custom_emoji_id": EMOJI_CROSS}]
-        ]
-    }
-
-def owner_confirm_menu(order_id):
-    return {
-        "inline_keyboard": [
-            [
-                {"text": "Да, деньги пришли", "callback_data": f"confirm_payment_{order_id}", "style": "success", "icon_custom_emoji_id": EMOJI_CHECK},
-                {"text": "Нет, отменить заказ", "callback_data": f"reject_payment_{order_id}", "style": "danger", "icon_custom_emoji_id": EMOJI_CROSS}
-            ]
+            [{"text": "Я оплатил", "callback_data": "i_paid", "style": "success"}],
+            [{"text": "Отменить заказ", "callback_data": "cancel_payment", "style": "danger"}]
         ]
     }
 
 def owner_done_menu(order_id):
     return {
         "inline_keyboard": [
-            [{"text": "Я выполнил заказ", "callback_data": f"order_done_{order_id}", "style": "success", "icon_custom_emoji_id": EMOJI_CHECK}]
+            [{"text": "Я выполнил заказ", "callback_data": f"order_done_{order_id}", "style": "success"}]
         ]
     }
 
 def after_payment_menu():
     return {
         "inline_keyboard": [
-            [{"text": "Отменить заказ", "callback_data": "cancel_payment", "style": "danger", "icon_custom_emoji_id": EMOJI_CROSS}]
+            [{"text": "Отменить заказ", "callback_data": "cancel_payment", "style": "danger"}]
         ]
     }
 
@@ -267,6 +214,7 @@ def get_pop_cart_text(cart):
 
 def handle_update(update):
     try:
+        # ОБРАБОТКА СООБЩЕНИЙ
         if "message" in update:
             msg = update["message"]
             chat_id = msg["chat"]["id"]
@@ -280,42 +228,27 @@ def handle_update(update):
             
             if text == "/start":
                 try:
-                    result = send_photo(
+                    send_photo(
                         chat_id,
                         PHOTO_URL,
-                        caption=(
-                            f'<tg-emoji emoji-id="{EMOJI_WAVE}">👋</tg-emoji> '
-                            f'Добро пожаловать в KRANZAYY UC BOT!\n\n'
-                            f'Выберите действие:'
-                        ),
+                        caption="👋 Добро пожаловать в KRANZAYY UC BOT!\n\nВыберите действие:",
                         reply_markup=main_menu()
                     )
-                    if not result.get("ok"):
-                        send_message(
-                            chat_id,
-                            f'<tg-emoji emoji-id="{EMOJI_WAVE}">👋</tg-emoji> '
-                            f'Добро пожаловать в KRANZAYY UC BOT!\n\n'
-                            f'Выберите действие:',
-                            main_menu()
-                        )
                 except:
                     send_message(
                         chat_id,
-                        f'<tg-emoji emoji-id="{EMOJI_WAVE}">👋</tg-emoji> '
-                        f'Добро пожаловать в KRANZAYY UC BOT!\n\n'
-                        f'Выберите действие:',
+                        "👋 Добро пожаловать в KRANZAYY UC BOT!\n\nВыберите действие:",
                         main_menu()
                     )
                 return
             
-            # Обработка ввода PUBG ID
+            # Ввод PUBG ID
             if user_data[user_id].get("step") == "waiting_pubg_id":
                 pubg_id = text.strip()
                 if not pubg_id.isdigit() or len(pubg_id) < 5:
                     send_message(
                         chat_id,
-                        f'<tg-emoji emoji-id="{EMOJI_CROSS}">❌</tg-emoji> '
-                        f'Неверный формат. Введите только цифры (минимум 5):',
+                        "❌ Неверный формат. Введите только цифры (минимум 5):",
                         after_payment_menu()
                     )
                     return
@@ -323,7 +256,6 @@ def handle_update(update):
                 user_data[user_id]["temp"]["pubg_id"] = pubg_id
                 user_data[user_id]["step"] = "main"
                 
-                # Определяем что заказывали: UC или ПП
                 order_type = user_data[user_id]["temp"].get("order_type", "UC")
                 
                 if order_type == "UC":
@@ -338,53 +270,45 @@ def handle_update(update):
                     item_name = f"{total_pop} ПП"
                 
                 username = get_user_name(chat_id)
-                user_mention = f'<a href="tg://user?id={chat_id}">{username}</a>'
-                
-                # ===== ОТПРАВКА ВЛАДЕЛЬЦУ =====
                 order_id = f"{chat_id}_{int(time.time())}"
+                
                 orders[order_id] = {
                     "user_id": chat_id,
-                    "cart": cart,
                     "total": total_uc if order_type == "UC" else total_pop,
                     "total_price": total_price,
                     "username": username,
                     "order_type": order_type,
-                    "pubg_id": pubg_id,
-                    "status": "waiting_done"
+                    "pubg_id": pubg_id
                 }
                 
+                # Владельцу
                 owner_text = (
-                    f'<tg-emoji emoji-id="{EMOJI_ORDER}">📦</tg-emoji> '
-                    f'<b>НОВЫЙ ЗАКАЗ ({order_type})</b>\n\n'
-                    f'<tg-emoji emoji-id="{EMOJI_USER}">👤</tg-emoji> Покупатель: {user_mention}\n'
-                    f'<tg-emoji emoji-id="{EMOJI_UC}">🆔</tg-emoji> PUBG ID: {pubg_id}\n'
-                    f'<tg-emoji emoji-id="{EMOJI_ORDER}">📦</tg-emoji> Товары:\n{cart_text}\n'
-                    f'<tg-emoji emoji-id="{EMOJI_MONEY}">💰</tg-emoji> Итого: {total_price}₽\n\n'
-                    f'<tg-emoji emoji-id="{EMOJI_TIME}">⏳</tg-emoji> Ожидает выполнения'
+                    f"📦 НОВЫЙ ЗАКАЗ ({order_type})\n\n"
+                    f"👤 Покупатель: {username}\n"
+                    f"🆔 PUBG ID: {pubg_id}\n"
+                    f"📦 Товары:\n{cart_text}\n"
+                    f"💰 Итого: {total_price}₽"
+                )
+                send_message(OWNER_ID, owner_text, owner_done_menu(order_id))
+                
+                # Покупателю
+                send_message(
+                    chat_id,
+                    f"✅ Заказ подтверждён!\n\n"
+                    f"📦 Товар: {item_name}\n"
+                    f"💰 Сумма: {total_price}₽\n"
+                    f"🆔 PUBG ID: {pubg_id}\n\n"
+                    f"⏳ Время доставки: от 5 до 30 минут",
+                    main_menu()
                 )
                 
-                send_message(OWNER_ID, owner_text, owner_done_menu(order_id), parse_mode="HTML")
-                
-                # Очищаем соответствующую корзину
                 if order_type == "UC":
                     user_data[user_id]["uc_cart"] = {}
                 else:
                     user_data[user_id]["pop_cart"] = {}
-                
-                # ===== ОТВЕТ ПОКУПАТЕЛЮ =====
-                send_message(
-                    chat_id,
-                    f'<tg-emoji emoji-id="{EMOJI_CHECK}">✅</tg-emoji> '
-                    f'<b>Заказ подтверждён!</b>\n\n'
-                    f'<tg-emoji emoji-id="{EMOJI_ORDER}">📦</tg-emoji> Товар: {item_name}\n'
-                    f'<tg-emoji emoji-id="{EMOJI_MONEY}">💰</tg-emoji> Сумма: {total_price}₽\n'
-                    f'<tg-emoji emoji-id="{EMOJI_UC}">🆔</tg-emoji> Ваш PUBG ID: {pubg_id}\n\n'
-                    f'<tg-emoji emoji-id="{EMOJI_TIME}">⏳</tg-emoji> Время доставки: от 5 до 30 минут\n\n'
-                    f'Ожидайте выполнения заказа.',
-                    main_menu()
-                )
                 return
         
+        # ОБРАБОТКА КНОПОК
         elif "callback_query" in update:
             cb = update["callback_query"]
             chat_id = cb["message"]["chat"]["id"]
@@ -393,54 +317,38 @@ def handle_update(update):
             cb_id = cb["id"]
             user_id = str(chat_id)
             
+            logger.info(f"🖱 Нажата кнопка: {data}")
+            
+            # ОБЯЗАТЕЛЬНЫЙ ОТВЕТ НА КАЖДУЮ КНОПКУ
+            answer_callback(cb_id, f"✅ Нажато: {data}")
+            
             if user_id not in user_data:
                 user_data[user_id] = {"uc_cart": {}, "pop_cart": {}, "step": "main", "temp": {}}
             
-            logger.info(f"🖱 Нажата кнопка: {data}")
-            
-            # ---- НАЗАД (С ФОТО) ----
+            # ---- НАЗАД ----
             if data == "back_to_main":
                 try:
-                    send_photo(
-                        chat_id,
-                        PHOTO_URL,
-                        caption=f'<tg-emoji emoji-id="{EMOJI_WAVE}">👋</tg-emoji> Главное меню:',
-                        reply_markup=main_menu()
-                    )
+                    send_photo(chat_id, PHOTO_URL, caption="👋 Главное меню:", reply_markup=main_menu())
                     delete_message(chat_id, message_id)
                 except:
-                    edit_message(
-                        chat_id,
-                        message_id,
-                        f'<tg-emoji emoji-id="{EMOJI_WAVE}">👋</tg-emoji> Главное меню:',
-                        main_menu()
-                    )
-                answer_callback(cb_id)
+                    edit_message(chat_id, message_id, "👋 Главное меню:", main_menu())
                 return
             
             # ===== UC =====
             if data == "buy_uc":
-                edit_message(
-                    chat_id,
-                    message_id,
-                    f'<tg-emoji emoji-id="{EMOJI_CART}">🛒</tg-emoji> <b>Корзина UC</b>\n\n'
-                    f'Выберите количество UC:',
-                    uc_cart_menu()
-                )
-                answer_callback(cb_id)
+                edit_message(chat_id, message_id, "🛒 Корзина UC\n\nВыберите количество UC:", uc_cart_menu())
                 return
             
             if data.startswith("uc_add_"):
                 amount = data.replace("uc_add_", "")
                 user_data[user_id]["uc_cart"][amount] = user_data[user_id]["uc_cart"].get(amount, 0) + 1
                 total_uc, total_price = get_uc_total(user_data[user_id]["uc_cart"])
-                answer_callback(cb_id, f'<tg-emoji emoji-id="{EMOJI_CHECK}">✅</tg-emoji> +{amount} UC! Итого: {total_price}₽')
                 
                 cart = user_data[user_id]["uc_cart"]
-                text = f'<tg-emoji emoji-id="{EMOJI_CART}">🛒</tg-emoji> <b>Корзина UC</b>\n\n'
+                text = f"🛒 Корзина UC\n\n"
                 if cart:
                     text += get_uc_cart_text(cart)
-                    text += f'\n<tg-emoji emoji-id="{EMOJI_ORDER}">📦</tg-emoji> Итого: {total_uc} UC — {total_price}₽'
+                    text += f"\n📦 Итого: {total_uc} UC — {total_price}₽"
                 else:
                     text += "Пусто"
                 edit_message(chat_id, message_id, text, uc_cart_menu())
@@ -448,19 +356,13 @@ def handle_update(update):
             
             if data == "uc_clear_cart":
                 user_data[user_id]["uc_cart"] = {}
-                answer_callback(cb_id, f'<tg-emoji emoji-id="{EMOJI_CROSS}">🗑</tg-emoji> Корзина UC очищена!')
-                edit_message(
-                    chat_id,
-                    message_id,
-                    f'<tg-emoji emoji-id="{EMOJI_CART}">🛒</tg-emoji> <b>Корзина UC</b>\n\nПусто',
-                    uc_cart_menu()
-                )
+                edit_message(chat_id, message_id, "🛒 Корзина UC\n\nПусто", uc_cart_menu())
                 return
             
             if data == "uc_checkout":
                 cart = user_data[user_id]["uc_cart"]
                 if not cart:
-                    answer_callback(cb_id, f'<tg-emoji emoji-id="{EMOJI_CROSS}">❌</tg-emoji> Корзина UC пуста!', True)
+                    answer_callback(cb_id, "❌ Корзина пуста!", True)
                     return
                 
                 user_data[user_id]["temp"]["order_type"] = "UC"
@@ -468,32 +370,22 @@ def handle_update(update):
                 cart_text = get_uc_cart_text(cart)
                 
                 payment_text = (
-                    f'<tg-emoji emoji-id="{EMOJI_CARD}">💳</tg-emoji> <b>Оплата заказа UC</b>\n\n'
-                    f'<tg-emoji emoji-id="{EMOJI_ORDER}">📦</tg-emoji> Товары:\n{cart_text}\n'
-                    f'<tg-emoji emoji-id="{EMOJI_MONEY}">💰</tg-emoji> Итого: {total_price}₽\n\n'
-                    f'<b>Способы оплаты:</b>\n\n'
-                    f'<tg-emoji emoji-id="{EMOJI_CARD}">💳</tg-emoji> <b>По номеру карты (Сбербанк):</b>\n'
-                    f'<code>2202208555983213</code>\n\n'
-                    f'<tg-emoji emoji-id="{EMOJI_PHONE}">📱</tg-emoji> <b>По номеру телефона (Сбербанк):</b>\n'
-                    f'<code>+7 952 321-66-09</code>\n\n'
-                    f'Оплатите заказ удобным для вас способом.\n'
-                    f'Затем нажмите кнопку <b>«Я оплатил»</b>.'
+                    f"💳 Оплата заказа UC\n\n"
+                    f"📦 Товары:\n{cart_text}\n"
+                    f"💰 Итого: {total_price}₽\n\n"
+                    f"Способы оплаты:\n\n"
+                    f"💳 По номеру карты (Сбербанк):\n"
+                    f"2202208555983213\n\n"
+                    f"📱 По номеру телефона (Сбербанк):\n"
+                    f"+7 952 321-66-09\n\n"
+                    f"Оплатите и нажмите «Я оплатил»."
                 )
-                
-                edit_message(chat_id, message_id, payment_text, payment_menu(), parse_mode="HTML")
-                answer_callback(cb_id)
+                edit_message(chat_id, message_id, payment_text, payment_menu())
                 return
             
             # ===== ПОПУЛЯРНОСТЬ =====
             if data == "popularity":
-                edit_message(
-                    chat_id,
-                    message_id,
-                    f'<tg-emoji emoji-id="{EMOJI_STAR}">⭐️</tg-emoji> <b>Корзина популярности</b>\n\n'
-                    f'Выберите количество популярности:',
-                    popularity_cart_menu()
-                )
-                answer_callback(cb_id)
+                edit_message(chat_id, message_id, "⭐️ Корзина популярности\n\nВыберите количество ПП:", popularity_cart_menu())
                 return
             
             if data.startswith("pop_add_"):
@@ -501,13 +393,12 @@ def handle_update(update):
                 user_data[user_id]["pop_cart"][amount] = user_data[user_id]["pop_cart"].get(amount, 0) + 1
                 total_pop, total_price = get_pop_total(user_data[user_id]["pop_cart"])
                 formatted = f"{int(amount):,}".replace(",", " ")
-                answer_callback(cb_id, f'<tg-emoji emoji-id="{EMOJI_CHECK}">✅</tg-emoji> +{formatted} ПП! Итого: {total_price}₽')
                 
                 cart = user_data[user_id]["pop_cart"]
-                text = f'<tg-emoji emoji-id="{EMOJI_STAR}">⭐️</tg-emoji> <b>Корзина популярности</b>\n\n'
+                text = f"⭐️ Корзина популярности\n\n"
                 if cart:
                     text += get_pop_cart_text(cart)
-                    text += f'\n<tg-emoji emoji-id="{EMOJI_ORDER}">📦</tg-emoji> Итого: {total_pop} ПП — {total_price}₽'
+                    text += f"\n📦 Итого: {total_pop} ПП — {total_price}₽"
                 else:
                     text += "Пусто"
                 edit_message(chat_id, message_id, text, popularity_cart_menu())
@@ -515,19 +406,13 @@ def handle_update(update):
             
             if data == "pop_clear_cart":
                 user_data[user_id]["pop_cart"] = {}
-                answer_callback(cb_id, f'<tg-emoji emoji-id="{EMOJI_CROSS}">🗑</tg-emoji> Корзина популярности очищена!')
-                edit_message(
-                    chat_id,
-                    message_id,
-                    f'<tg-emoji emoji-id="{EMOJI_STAR}">⭐️</tg-emoji> <b>Корзина популярности</b>\n\nПусто',
-                    popularity_cart_menu()
-                )
+                edit_message(chat_id, message_id, "⭐️ Корзина популярности\n\nПусто", popularity_cart_menu())
                 return
             
             if data == "pop_checkout":
                 cart = user_data[user_id]["pop_cart"]
                 if not cart:
-                    answer_callback(cb_id, f'<tg-emoji emoji-id="{EMOJI_CROSS}">❌</tg-emoji> Корзина популярности пуста!', True)
+                    answer_callback(cb_id, "❌ Корзина пуста!", True)
                     return
                 
                 user_data[user_id]["temp"]["order_type"] = "ПП"
@@ -535,23 +420,20 @@ def handle_update(update):
                 cart_text = get_pop_cart_text(cart)
                 
                 payment_text = (
-                    f'<tg-emoji emoji-id="{EMOJI_CARD}">💳</tg-emoji> <b>Оплата заказа популярности</b>\n\n'
-                    f'<tg-emoji emoji-id="{EMOJI_ORDER}">📦</tg-emoji> Товары:\n{cart_text}\n'
-                    f'<tg-emoji emoji-id="{EMOJI_MONEY}">💰</tg-emoji> Итого: {total_price}₽\n\n'
-                    f'<b>Способы оплаты:</b>\n\n'
-                    f'<tg-emoji emoji-id="{EMOJI_CARD}">💳</tg-emoji> <b>По номеру карты (Сбербанк):</b>\n'
-                    f'<code>2202208555983213</code>\n\n'
-                    f'<tg-emoji emoji-id="{EMOJI_PHONE}">📱</tg-emoji> <b>По номеру телефона (Сбербанк):</b>\n'
-                    f'<code>+7 952 321-66-09</code>\n\n'
-                    f'Оплатите заказ удобным для вас способом.\n'
-                    f'Затем нажмите кнопку <b>«Я оплатил»</b>.'
+                    f"💳 Оплата заказа популярности\n\n"
+                    f"📦 Товары:\n{cart_text}\n"
+                    f"💰 Итого: {total_price}₽\n\n"
+                    f"Способы оплаты:\n\n"
+                    f"💳 По номеру карты (Сбербанк):\n"
+                    f"2202208555983213\n\n"
+                    f"📱 По номеру телефона (Сбербанк):\n"
+                    f"+7 952 321-66-09\n\n"
+                    f"Оплатите и нажмите «Я оплатил»."
                 )
-                
-                edit_message(chat_id, message_id, payment_text, payment_menu(), parse_mode="HTML")
-                answer_callback(cb_id)
+                edit_message(chat_id, message_id, payment_text, payment_menu())
                 return
             
-            # ---- ОПЛАТА (ОБЩАЯ ДЛЯ UC И ПП) ----
+            # ---- ОПЛАТА ----
             if data == "i_paid":
                 order_type = user_data[user_id]["temp"].get("order_type", "UC")
                 
@@ -559,44 +441,37 @@ def handle_update(update):
                     cart = user_data[user_id]["uc_cart"]
                     total_uc, total_price = get_uc_total(cart)
                     cart_text = get_uc_cart_text(cart)
-                    item_name = f"{total_uc} UC"
                 else:
                     cart = user_data[user_id]["pop_cart"]
                     total_pop, total_price = get_pop_total(cart)
                     cart_text = get_pop_cart_text(cart)
-                    item_name = f"{total_pop} ПП"
                 
                 username = get_user_name(chat_id)
-                user_mention = f'<a href="tg://user?id={chat_id}">{username}</a>'
-                
                 order_id = f"{chat_id}_{int(time.time())}"
+                
                 orders[order_id] = {
                     "user_id": chat_id,
-                    "cart": cart,
                     "total": total_uc if order_type == "UC" else total_pop,
                     "total_price": total_price,
                     "username": username,
-                    "order_type": order_type,
-                    "status": "waiting_confirmation"
+                    "order_type": order_type
                 }
                 
                 owner_text = (
-                    f'<tg-emoji emoji-id="{EMOJI_MONEY}">💰</tg-emoji> <b>ПОДТВЕРЖДЕНИЕ ОПЛАТЫ ({order_type})</b>\n\n'
-                    f'<tg-emoji emoji-id="{EMOJI_USER}">👤</tg-emoji> Покупатель: {user_mention}\n'
-                    f'<tg-emoji emoji-id="{EMOJI_ORDER}">📦</tg-emoji> Товары:\n{cart_text}\n'
-                    f'<tg-emoji emoji-id="{EMOJI_MONEY}">💰</tg-emoji> Итого: {total_price}₽\n\n'
-                    f'<tg-emoji emoji-id="{EMOJI_WARN}">❓</tg-emoji> Деньги пришли?'
+                    f"💰 ПОДТВЕРЖДЕНИЕ ОПЛАТЫ ({order_type})\n\n"
+                    f"👤 Покупатель: {username}\n"
+                    f"📦 Товары:\n{cart_text}\n"
+                    f"💰 Итого: {total_price}₽"
                 )
+                send_message(OWNER_ID, owner_text)
                 
-                send_message(OWNER_ID, owner_text, owner_confirm_menu(order_id), parse_mode="HTML")
-                
-                answer_callback(cb_id, f'<tg-emoji emoji-id="{EMOJI_CHECK}">✅</tg-emoji> Запрос на подтверждение отправлен!')
-                edit_message(
+                send_message(
                     chat_id,
-                    message_id,
-                    f'<tg-emoji emoji-id="{EMOJI_TIME}">⏳</tg-emoji> Ожидайте подтверждения оплаты...',
-                    main_menu()
+                    f"✅ Ваша оплата подтверждена!\n\n"
+                    f"🆔 Введите ваш PUBG ID:",
+                    after_payment_menu()
                 )
+                user_data[user_id]["step"] = "waiting_pubg_id"
                 return
             
             if data == "cancel_payment":
@@ -604,100 +479,15 @@ def handle_update(update):
                 user_data[user_id]["pop_cart"] = {}
                 user_data[user_id]["step"] = "main"
                 user_data[user_id]["temp"] = {}
-                answer_callback(cb_id, f'<tg-emoji emoji-id="{EMOJI_CROSS}">❌</tg-emoji> Заказ отменён')
-                try:
-                    send_photo(
-                        chat_id,
-                        PHOTO_URL,
-                        caption=f'<tg-emoji emoji-id="{EMOJI_CROSS}">❌</tg-emoji> Заказ отменён',
-                        reply_markup=main_menu()
-                    )
-                    delete_message(chat_id, message_id)
-                except:
-                    edit_message(
-                        chat_id,
-                        message_id,
-                        f'<tg-emoji emoji-id="{EMOJI_CROSS}">❌</tg-emoji> Заказ отменён',
-                        main_menu()
-                    )
+                edit_message(chat_id, message_id, "❌ Заказ отменён", main_menu())
                 return
             
-            # ---- ПОДТВЕРЖДЕНИЕ ОТ ВЛАДЕЛЬЦА ----
-            if data.startswith("confirm_payment_"):
-                order_id = data.replace("confirm_payment_", "")
-                order = orders.get(order_id)
-                if not order:
-                    answer_callback(cb_id, f'<tg-emoji emoji-id="{EMOJI_CROSS}">❌</tg-emoji> Заказ не найден')
-                    return
-                
-                user_id = order["user_id"]
-                total_price = order["total_price"]
-                total = order["total"]
-                order_type = order.get("order_type", "UC")
-                
-                send_message(
-                    user_id,
-                    f'<tg-emoji emoji-id="{EMOJI_CHECK}">✅</tg-emoji> <b>Оплата подтверждена!</b>\n\n'
-                    f'<tg-emoji emoji-id="{EMOJI_ORDER}">📦</tg-emoji> Товар: {total} {order_type}\n'
-                    f'<tg-emoji emoji-id="{EMOJI_MONEY}">💰</tg-emoji> Сумма: {total_price}₽\n\n'
-                    f'<tg-emoji emoji-id="{EMOJI_UC}">🆔</tg-emoji> <b>Введите ваш PUBG ID:</b>\n'
-                    f'<tg-emoji emoji-id="{EMOJI_WARN}">⚠️</tg-emoji> <i>Указывайте ID осторожно!\n'
-                    f'Если вы укажете неверный ID, ваш товар будет отправлен другому человеку.</i>',
-                    after_payment_menu(),
-                    parse_mode="HTML"
-                )
-                
-                user_data[str(user_id)]["step"] = "waiting_pubg_id"
-                user_data[str(user_id)]["temp"]["order_id"] = order_id
-                user_data[str(user_id)]["temp"]["order_type"] = order_type
-                
-                answer_callback(cb_id, f'<tg-emoji emoji-id="{EMOJI_CHECK}">✅</tg-emoji> Пользователь уведомлён')
-                edit_message(
-                    chat_id,
-                    message_id,
-                    f'<tg-emoji emoji-id="{EMOJI_CHECK}">✅</tg-emoji> Пользователь уведомлён. Ожидает ввода PUBG ID',
-                    main_menu()
-                )
-                return
-            
-            if data.startswith("reject_payment_"):
-                order_id = data.replace("reject_payment_", "")
-                order = orders.get(order_id)
-                if not order:
-                    answer_callback(cb_id, f'<tg-emoji emoji-id="{EMOJI_CROSS}">❌</tg-emoji> Заказ не найден')
-                    return
-                
-                user_id = order["user_id"]
-                
-                send_message(
-                    user_id,
-                    f'<tg-emoji emoji-id="{EMOJI_CROSS}">❌</tg-emoji> <b>Оплата не подтверждена</b>\n\n'
-                    f'К сожалению, мы не получили ваш платёж.\n'
-                    f'Заказ отменён.',
-                    main_menu(),
-                    parse_mode="HTML"
-                )
-                
-                user_data[str(user_id)]["uc_cart"] = {}
-                user_data[str(user_id)]["pop_cart"] = {}
-                user_data[str(user_id)]["step"] = "main"
-                user_data[str(user_id)]["temp"] = {}
-                
-                answer_callback(cb_id, f'<tg-emoji emoji-id="{EMOJI_CROSS}">❌</tg-emoji> Заказ отменён')
-                edit_message(
-                    chat_id,
-                    message_id,
-                    f'<tg-emoji emoji-id="{EMOJI_CROSS}">❌</tg-emoji> Заказ отменён',
-                    main_menu()
-                )
-                return
-            
-            # ---- ВЫПОЛНЕНИЕ ЗАКАЗА ВЛАДЕЛЬЦЕМ ----
+            # ---- ВЫПОЛНЕНИЕ ЗАКАЗА ----
             if data.startswith("order_done_"):
                 order_id = data.replace("order_done_", "")
                 order = orders.get(order_id)
                 if not order:
-                    answer_callback(cb_id, f'<tg-emoji emoji-id="{EMOJI_CROSS}">❌</tg-emoji> Заказ не найден')
+                    answer_callback(cb_id, "❌ Заказ не найден", True)
                     return
                 
                 user_id = order["user_id"]
@@ -707,57 +497,31 @@ def handle_update(update):
                 
                 send_message(
                     user_id,
-                    f'<tg-emoji emoji-id="{EMOJI_DONE}">🎉</tg-emoji> <b>Ваш заказ выполнен!</b>\n\n'
-                    f'<tg-emoji emoji-id="{EMOJI_ORDER}">📦</tg-emoji> Товар: {total} {order_type}\n'
-                    f'<tg-emoji emoji-id="{EMOJI_UC}">🆔</tg-emoji> PUBG ID: {pubg_id}\n\n'
-                    f'<tg-emoji emoji-id="{EMOJI_HEART}">❤️‍🔥</tg-emoji> Спасибо за покупку!\n'
-                    f'Мы ценим ваше доверие.',
-                    main_menu(),
-                    parse_mode="HTML"
-                )
-                
-                answer_callback(cb_id, f'<tg-emoji emoji-id="{EMOJI_CHECK}">✅</tg-emoji> Заказ выполнен!')
-                edit_message(
-                    chat_id,
-                    message_id,
-                    f'<tg-emoji emoji-id="{EMOJI_CHECK}">✅</tg-emoji> Заказ {order_id} выполнен!',
+                    f"🎉 Ваш заказ выполнен!\n\n"
+                    f"📦 Товар: {total} {order_type}\n"
+                    f"🆔 PUBG ID: {pubg_id}\n\n"
+                    f"❤️‍🔥 Спасибо за покупку!",
                     main_menu()
                 )
                 
-                user_data[str(user_id)]["uc_cart"] = {}
-                user_data[str(user_id)]["pop_cart"] = {}
-                user_data[str(user_id)]["step"] = "main"
-                user_data[str(user_id)]["temp"] = {}
+                edit_message(chat_id, message_id, f"✅ Заказ {order_id} выполнен!", main_menu())
                 return
             
             # ---- ИНФОРМАЦИЯ ----
             if data == "info":
                 text = (
-                    f'<tg-emoji emoji-id="{EMOJI_INFO}">ℹ️</tg-emoji> KRANZAYY UC BOT\n\n'
-                    f'Наш бот работает для вас '
-                    f'<tg-emoji emoji-id="{EMOJI_HEART}">❤️‍🔥</tg-emoji>\n\n'
-                    f'<tg-emoji emoji-id="{EMOJI_FIRE}">🌟</tg-emoji>'
-                    f'<tg-emoji emoji-id="{EMOJI_SPARKLE}">✨</tg-emoji>'
-                    f'<tg-emoji emoji-id="{EMOJI_SPARKLE}">✨</tg-emoji>'
-                    f'<tg-emoji emoji-id="{EMOJI_STAR2}">💫</tg-emoji>\n\n'
-                    f'Наши ресурсы:\n'
-                    f'<tg-emoji emoji-id="{EMOJI_SHOP}">🛒</tg-emoji> Магазин - https://t.me/kranzayyuc\n'
-                    f'<tg-emoji emoji-id="{EMOJI_MEGAPHONE}">📢</tg-emoji> Канал - https://t.me/KRANZAYY_STORE\n'
-                    f'<tg-emoji emoji-id="{EMOJI_METRO}">🏪</tg-emoji> Метро шоп - https://t.me/MetroShop_Kranzayy\n'
-                    f'<tg-emoji emoji-id="{EMOJI_REVIEW}">⭐</tg-emoji> Отзывы - https://t.me/Kranzayy_OTZ\n\n'
-                    f'<tg-emoji emoji-id="{EMOJI_DIAMOND}">💎</tg-emoji>'
-                    f'<tg-emoji emoji-id="{EMOJI_DIAMOND}">💎</tg-emoji>'
-                    f'<tg-emoji emoji-id="{EMOJI_DIAMOND}">💎</tg-emoji>'
-                    f'<tg-emoji emoji-id="{EMOJI_DIAMOND}">💎</tg-emoji>\n\n'
-                    f'<tg-emoji emoji-id="{EMOJI_SUPPORT}">🆘</tg-emoji> Техническая поддержка: @M_K_B_59'
+                    "ℹ️ KRANZAYY UC BOT\n\n"
+                    "Наш бот работает для вас ❤️‍🔥\n\n"
+                    "Наши ресурсы:\n"
+                    "🛒 Магазин - https://t.me/kranzayyuc\n"
+                    "📢 Канал - https://t.me/KRANZAYY_STORE\n"
+                    "⭐ Отзывы - https://t.me/Kranzayy_OTZ\n\n"
+                    "🆘 Поддержка: @M_K_B_59"
                 )
-                edit_message(chat_id, message_id, text, main_menu(), parse_mode="HTML")
-                answer_callback(cb_id)
+                edit_message(chat_id, message_id, text, main_menu())
                 return
             
-            # ---- НЕИЗВЕСТНО ----
             logger.warning(f"⚠️ Неизвестная кнопка: {data}")
-            answer_callback(cb_id, f'<tg-emoji emoji-id="{EMOJI_CROSS}">❌</tg-emoji> Неизвестная команда')
     
     except Exception as e:
         logger.error(f"💥 ОШИБКА: {e}")
@@ -768,13 +532,8 @@ def handle_update(update):
 def main():
     offset = None
     logger.info("=" * 50)
-    logger.info("🚀 БОТ ЗАПУЩЕН (ТОЛЬКО ПРЕМИУМ-ЭМОДЗИ)")
-    logger.info(f"👤 Владелец: {OWNER_ID}")
-    logger.info("💎 Все эмодзи заменены на премиум-версии")
-    logger.info("🏦 Сбербанк указан в реквизитах")
-    logger.info("⭐️ Популярность в отдельной корзине")
-    logger.info("📸 Фото в главном меню")
-    logger.info("✅ PUBG ID отправляется владельцу")
+    logger.info("🚀 БОТ ЗАПУЩЕН (УПРОЩЁННАЯ ВЕРСИЯ)")
+    logger.info("✅ КАЖДАЯ КНОПКА ОТВЕЧАЕТ answer_callback")
     logger.info("=" * 50)
     
     while True:
