@@ -1,0 +1,263 @@
+import logging
+from aiogram import Bot, Dispatcher, types
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.filters import Command
+from aiogram import F
+from aiogram.client.session.aiohttp import AiohttpSession
+import asyncio
+import sys
+import aiohttp
+from io import BytesIO
+
+# ========== КОНФИГУРАЦИЯ ==========
+BOT_TOKEN = "8830398652:AAFtxT4KfBSaPIJCIfeApo452ve-wRxiq7Q"
+PHOTO_URL = "https://i.ibb.co/67pwkmfb/IMG-3088.jpg"
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+logger = logging.getLogger(__name__)
+
+session = AiohttpSession(timeout=60)
+bot = Bot(token=BOT_TOKEN, session=session)
+dp = Dispatcher()
+
+user_carts = {}
+
+# ========== ЦВЕТНЫЕ КНОПКИ (через кастомные эмодзи) ==========
+# В Telegram нельзя сделать кнопки с фоном, но можно использовать цветные эмодзи:
+# 🔵 - синий, 🟢 - зелёный, 🔴 - красный, 🟣 - фиолетовый
+
+# ========== КЛАВИАТУРЫ ==========
+
+# Главное меню с цветными кнопками (как на скриншоте)
+main_menu = InlineKeyboardMarkup(inline_keyboard=[
+    [
+        InlineKeyboardButton(text="🔵 UC по ID", callback_data="uc_by_id"),
+        InlineKeyboardButton(text="🟢 Купить КОД", callback_data="buy_code")
+    ],
+    [
+        InlineKeyboardButton(text="🔴 Информация", callback_data="info")
+    ],
+])
+
+# Меню "UC по ID" (синие кнопки)
+uc_by_id_menu = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text="🔵 60 UC - 79₽", callback_data="uc_60")],
+    [InlineKeyboardButton(text="🔵 325 UC - 425₽", callback_data="uc_325")],
+    [InlineKeyboardButton(text="🔵 660 UC - 843₽", callback_data="uc_660")],
+    [InlineKeyboardButton(text="🔵 1800 UC - 2118₽", callback_data="uc_1800")],
+    [InlineKeyboardButton(text="🔵 3850 UC - 4210₽", callback_data="uc_3850")],
+    [InlineKeyboardButton(text="🔵 8100 UC - 8372₽", callback_data="uc_8100")],
+    [InlineKeyboardButton(text="⬅️ Назад", callback_data="back_to_main")],
+])
+
+# Меню "Купить КОД" (зелёные кнопки)
+buy_code_menu = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text="🟢 60 UC - 79₽", callback_data="code_60")],
+    [InlineKeyboardButton(text="🟢 325 UC - 425₽", callback_data="code_325")],
+    [InlineKeyboardButton(text="🟢 660 UC - 843₽", callback_data="code_660")],
+    [InlineKeyboardButton(text="🟢 1800 UC - 2118₽", callback_data="code_1800")],
+    [InlineKeyboardButton(text="🟢 3850 UC - 4210₽", callback_data="code_3850")],
+    [InlineKeyboardButton(text="🟢 8100 UC - 8372₽", callback_data="code_8100")],
+    [InlineKeyboardButton(text="🛒 Корзина", callback_data="view_cart")],
+    [InlineKeyboardButton(text="🗑 Очистить корзину", callback_data="clear_cart")],
+    [InlineKeyboardButton(text="✅ Оформить", callback_data="checkout")],
+    [InlineKeyboardButton(text="⬅️ Назад", callback_data="back_to_main")],
+])
+
+# ========== ЦЕНЫ ==========
+UC_PRICES = {
+    "60": {"price": 79, "label": "79₽"},
+    "325": {"price": 425, "label": "425₽"},
+    "660": {"price": 843, "label": "843₽"},
+    "1800": {"price": 2118, "label": "2118₽"},
+    "3850": {"price": 4210, "label": "4210₽"},
+    "8100": {"price": 8372, "label": "8372₽"},
+}
+
+# ========== ФУНКЦИЯ ЗАГРУЗКИ ФОТО ==========
+async def get_photo_from_url(url: str):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status == 200:
+                return BytesIO(await response.read())
+            else:
+                raise Exception(f"Не удалось загрузить фото: {response.status}")
+
+# ========== ОБРАБОТЧИКИ ==========
+
+@dp.message(Command("start"))
+async def start_command(message: types.Message):
+    user_carts[message.from_user.id] = {}
+    try:
+        photo_bytes = await get_photo_from_url(PHOTO_URL)
+        await message.answer_photo(
+            photo=types.BufferedInputFile(photo_bytes.getvalue(), filename="menu.jpg"),
+            caption="👋 Добро пожаловать в магазин PUBG Mobile!\nВыберите действие:",
+            reply_markup=main_menu
+        )
+    except Exception as e:
+        logger.error(f"Ошибка при загрузке фото: {e}")
+        await message.answer(
+            "👋 Добро пожаловать в магазин PUBG Mobile!\nВыберите действие:",
+            reply_markup=main_menu
+        )
+
+@dp.callback_query(F.data == "back_to_main")
+async def back_to_main(callback: types.CallbackQuery):
+    try:
+        await callback.message.edit_text("👋 Главное меню:", reply_markup=main_menu)
+    except Exception:
+        await callback.message.answer("👋 Главное меню:", reply_markup=main_menu)
+    await callback.answer()
+
+# ========== UC ПО ID ==========
+
+@dp.callback_query(F.data == "uc_by_id")
+async def uc_by_id(callback: types.CallbackQuery):
+    await callback.message.edit_text("🎮 Выберите количество UC:", reply_markup=uc_by_id_menu)
+    await callback.answer()
+
+@dp.callback_query(F.data.startswith("uc_"))
+async def uc_purchase(callback: types.CallbackQuery):
+    amount = callback.data.split("_")[1]
+    price_label = UC_PRICES.get(amount, {}).get("label", "")
+    await callback.message.answer(
+        f"✅ Вы выбрали {amount} UC - {price_label}\nОжидайте подтверждения от оператора."
+    )
+    await callback.answer()
+
+# ========== КУПИТЬ КОД (КОРЗИНА) ==========
+
+@dp.callback_query(F.data == "buy_code")
+async def buy_code(callback: types.CallbackQuery):
+    await callback.message.edit_text(
+        "💬 Выберите код для покупки:\nНажмите на номинал, чтобы добавить в корзину.",
+        reply_markup=buy_code_menu
+    )
+    await callback.answer()
+
+@dp.callback_query(F.data.startswith("code_"))
+async def add_to_cart(callback: types.CallbackQuery):
+    user_id = callback.from_user.id
+    amount = callback.data.split("_")[1]
+    
+    if user_id not in user_carts:
+        user_carts[user_id] = {}
+    
+    user_carts[user_id][amount] = user_carts[user_id].get(amount, 0) + 1
+    
+    total_uc = sum(int(key) * value for key, value in user_carts[user_id].items())
+    total_price = sum(UC_PRICES.get(key, {}).get("price", 0) * value 
+                     for key, value in user_carts[user_id].items())
+    
+    await callback.message.answer(
+        f"✅ Добавлено {amount} UC в корзину!\n📦 В корзине: {total_uc} UC — {total_price}₽"
+    )
+    await callback.answer()
+
+@dp.callback_query(F.data == "view_cart")
+async def view_cart(callback: types.CallbackQuery):
+    user_id = callback.from_user.id
+    cart = user_carts.get(user_id, {})
+    
+    if not cart:
+        await callback.message.answer("🛒 Корзина пуста!")
+        await callback.answer()
+        return
+    
+    cart_text = "🛒 Ваша корзина:\n\n"
+    total_uc = 0
+    total_price = 0
+    
+    for amount, count in cart.items():
+        price = UC_PRICES.get(amount, {}).get("price", 0)
+        total_uc += int(amount) * count
+        total_price += price * count
+        cart_text += f"• {amount} UC x {count} = {price * count}₽\n"
+    
+    cart_text += f"\n📦 Итого: {total_uc} UC — {total_price}₽"
+    await callback.message.answer(cart_text)
+    await callback.answer()
+
+@dp.callback_query(F.data == "clear_cart")
+async def clear_cart(callback: types.CallbackQuery):
+    user_id = callback.from_user.id
+    user_carts[user_id] = {}
+    await callback.message.answer("🗑 Корзина очищена!")
+    await callback.answer()
+
+@dp.callback_query(F.data == "checkout")
+async def checkout(callback: types.CallbackQuery):
+    user_id = callback.from_user.id
+    cart = user_carts.get(user_id, {})
+    
+    if not cart:
+        await callback.message.answer("❌ Корзина пуста! Добавьте товары.")
+        await callback.answer()
+        return
+    
+    order_text = "✅ Заказ оформлен!\n\n"
+    total_uc = 0
+    total_price = 0
+    
+    for amount, count in cart.items():
+        price = UC_PRICES.get(amount, {}).get("price", 0)
+        total_uc += int(amount) * count
+        total_price += price * count
+        order_text += f"• {amount} UC x {count} = {price * count}₽\n"
+    
+    order_text += f"\n📦 Итого: {total_uc} UC — {total_price}₽\n⏳ Ожидайте, оператор свяжется с вами!"
+    
+    user_carts[user_id] = {}
+    await callback.message.answer(order_text)
+    await callback.answer()
+
+# ========== ИНФОРМАЦИЯ (ПРЕМИУМ-ЭМОДЗИ) ==========
+
+@dp.callback_query(F.data == "info")
+async def info(callback: types.CallbackQuery):
+    info_text = (
+        "Наш бот работает специально для вас "
+        '<tg-emoji emoji-id="5346301287774323405">❤️‍🔥</tg-emoji>\n\n'
+        '<tg-emoji emoji-id="5330051403563943171">🌟</tg-emoji>'
+        '<tg-emoji emoji-id="5330245862503236304">✨</tg-emoji>'
+        '<tg-emoji emoji-id="5330245862503236304">✨</tg-emoji>'
+        '<tg-emoji emoji-id="5327866716909229540">💫</tg-emoji>\n\n'
+        "Наши ресурсы: "
+        '<tg-emoji emoji-id="5231102735817918643">📌</tg-emoji>\n\n'
+        '<tg-emoji emoji-id="5318970495314436977">🛒</tg-emoji> Магазин - https://t.me/kranzayyuc\n'
+        '<tg-emoji emoji-id="5931395439738755762">📢</tg-emoji> Телеграмм канал - https://t.me/KRANZAYY_STORE\n'
+        '<tg-emoji emoji-id="5357432498680767940">🏪</tg-emoji> Метро шоп - https://t.me/MetroShop_Kranzayy\n'
+        '<tg-emoji emoji-id="5219809810802829750">⭐</tg-emoji> Отзывы - https://t.me/Kranzayy_OTZ\n\n'
+        '<tg-emoji emoji-id="5465556444931718975">💎</tg-emoji>'
+        '<tg-emoji emoji-id="5465556444931718975">💎</tg-emoji>'
+        '<tg-emoji emoji-id="5465556444931718975">💎</tg-emoji>'
+        '<tg-emoji emoji-id="5465556444931718975">💎</tg-emoji>\n\n'
+        '<tg-emoji emoji-id="5971889748615105853">🆘</tg-emoji> Техническая поддержка: @M_K_B_59'
+    )
+    
+    await callback.message.answer(info_text, parse_mode="HTML")
+    await callback.answer()
+
+# ========== ЗАПУСК ==========
+
+async def main():
+    logger.info("🚀 Бот запускается...")
+    try:
+        await dp.start_polling(bot)
+    except Exception as e:
+        logger.error(f"❌ Критическая ошибка: {e}")
+    finally:
+        await bot.session.close()
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logger.info("⏹ Бот остановлен пользователем")
+    except Exception as e:
+        logger.error(f"❌ Ошибка при запуске: {e}")
