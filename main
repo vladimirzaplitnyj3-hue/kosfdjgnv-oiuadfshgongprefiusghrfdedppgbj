@@ -6,6 +6,7 @@ import time
 BOT_TOKEN = "8833181446:AAFqiKedQpDm04CYP6tg4vb0MjH-k3M4GUw"
 BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 OWNER_ID = 6555825110
+PHOTO_URL = "https://i.ibb.co/67pwkmfb/IMG-3088.jpg"
 
 # ========== ID ПРЕМИУМ-ЭМОДЗИ ==========
 EMOJI_UC = "5318970495314436977"
@@ -21,6 +22,14 @@ EMOJI_DONE = "5285430309720966085"
 EMOJI_CARD = "5310169226856644648"
 EMOJI_PHONE = "5310076249404621168"
 EMOJI_HEART = "5346301287774323405"
+EMOJI_FIRE = "5330051403563943171"
+EMOJI_SPARKLE = "5330245862503236304"
+EMOJI_STAR2 = "5327866716909229540"
+EMOJI_SHOP = "5318970495314436977"
+EMOJI_MEGAPHONE = "5931395439738755762"
+EMOJI_METRO = "5357432498680767940"
+EMOJI_REVIEW = "5219809810802829750"
+EMOJI_DIAMOND = "5465556444931718975"
 
 # ========== ХРАНИЛИЩЕ ==========
 user_data = {}
@@ -30,6 +39,15 @@ orders = {}
 def send_message(chat_id, text, reply_markup=None):
     url = f"{BASE_URL}/sendMessage"
     payload = {"chat_id": chat_id, "text": text}
+    if reply_markup:
+        payload["reply_markup"] = json.dumps(reply_markup)
+    return requests.post(url, json=payload).json()
+
+def send_photo(chat_id, photo, caption=None, reply_markup=None):
+    url = f"{BASE_URL}/sendPhoto"
+    payload = {"chat_id": chat_id, "photo": photo}
+    if caption:
+        payload["caption"] = caption
     if reply_markup:
         payload["reply_markup"] = json.dumps(reply_markup)
     return requests.post(url, json=payload).json()
@@ -171,7 +189,15 @@ def handle_update(update):
                 user_data[user_id] = {"uc_cart": {}, "pop_cart": {}, "step": "main", "temp": {}}
             
             if text == "/start":
-                send_message(chat_id, "👋 Добро пожаловать в KRANZAYY UC BOT!\nВыберите действие:", main_menu())
+                try:
+                    send_photo(
+                        chat_id,
+                        PHOTO_URL,
+                        caption="👋 Добро пожаловать в KRANZAYY UC BOT!\n\nВыберите действие:",
+                        reply_markup=main_menu()
+                    )
+                except:
+                    send_message(chat_id, "👋 Добро пожаловать в KRANZAYY UC BOT!\n\nВыберите действие:", main_menu())
                 return
             
             if user_data[user_id].get("step") == "waiting_pubg":
@@ -237,9 +263,18 @@ def handle_update(update):
             if user_id not in user_data:
                 user_data[user_id] = {"uc_cart": {}, "pop_cart": {}, "step": "main", "temp": {}}
             
-            # ---- НАЗАД ----
+            # ---- НАЗАД (С ФОТО) ----
             if data == "back":
-                edit_message(chat_id, message_id, "👋 Главное меню:", main_menu())
+                try:
+                    send_photo(
+                        chat_id,
+                        PHOTO_URL,
+                        caption="👋 Главное меню:",
+                        reply_markup=main_menu()
+                    )
+                    delete_message(chat_id, message_id)
+                except:
+                    edit_message(chat_id, message_id, "👋 Главное меню:", main_menu())
                 return
             
             # ---- UC ----
@@ -379,16 +414,26 @@ def handle_update(update):
                 edit_message(chat_id, message_id, f"✅ Заказ {order_id} выполнен!", main_menu())
                 return
             
-            # ---- ИНФОРМАЦИЯ (ИСПРАВЛЕНО!) ----
+            # ---- ИНФОРМАЦИЯ (С ПРЕМИУМ-ЭМОДЗИ) ----
             if data == "info":
                 text = (
                     "ℹ️ KRANZAYY UC BOT\n\n"
-                    "Наш бот работает для вас ❤️‍🔥\n\n"
+                    "Наш бот работает для вас "
+                    f'<tg-emoji emoji-id="{EMOJI_HEART}">❤️‍🔥</tg-emoji>\n\n'
+                    f'<tg-emoji emoji-id="{EMOJI_FIRE}">🌟</tg-emoji>'
+                    f'<tg-emoji emoji-id="{EMOJI_SPARKLE}">✨</tg-emoji>'
+                    f'<tg-emoji emoji-id="{EMOJI_SPARKLE}">✨</tg-emoji>'
+                    f'<tg-emoji emoji-id="{EMOJI_STAR2}">💫</tg-emoji>\n\n'
                     "Наши ресурсы:\n"
-                    "🛒 Магазин - https://t.me/kranzayyuc\n"
-                    "📢 Канал - https://t.me/KRANZAYY_STORE\n"
-                    "⭐ Отзывы - https://t.me/Kranzayy_OTZ\n\n"
-                    "🆘 Поддержка: @M_K_B_59"
+                    f'<tg-emoji emoji-id="{EMOJI_SHOP}">🛒</tg-emoji> Магазин - https://t.me/kranzayyuc\n'
+                    f'<tg-emoji emoji-id="{EMOJI_MEGAPHONE}">📢</tg-emoji> Канал - https://t.me/KRANZAYY_STORE\n'
+                    f'<tg-emoji emoji-id="{EMOJI_METRO}">🏪</tg-emoji> Метро шоп - https://t.me/MetroShop_Kranzayy\n'
+                    f'<tg-emoji emoji-id="{EMOJI_REVIEW}">⭐</tg-emoji> Отзывы - https://t.me/Kranzayy_OTZ\n\n'
+                    f'<tg-emoji emoji-id="{EMOJI_DIAMOND}">💎</tg-emoji>'
+                    f'<tg-emoji emoji-id="{EMOJI_DIAMOND}">💎</tg-emoji>'
+                    f'<tg-emoji emoji-id="{EMOJI_DIAMOND}">💎</tg-emoji>'
+                    f'<tg-emoji emoji-id="{EMOJI_DIAMOND}">💎</tg-emoji>\n\n'
+                    f'<tg-emoji emoji-id="{EMOJI_SUPPORT}">🆘</tg-emoji> Техническая поддержка: @M_K_B_59'
                 )
                 edit_message(chat_id, message_id, text, main_menu())
                 return
@@ -398,20 +443,14 @@ def handle_update(update):
     except Exception as e:
         print(f"❌ ОШИБКА: {e}")
 
-def after_payment_menu():
-    return {
-        "inline_keyboard": [
-            [{"text": "Отменить заказ", "callback_data": "cancel", "style": "danger", "icon_custom_emoji_id": EMOJI_CROSS}]
-        ]
-    }
-
 # ========== ЗАПУСК ==========
 
 def main():
     offset = None
     print("🚀 БОТ ЗАПУЩЕН!")
+    print("✅ ФОТО В ГЛАВНОМ МЕНЮ!")
+    print("✅ ПРЕМИУМ-ЭМОДЗИ В ИНФОРМАЦИИ!")
     print("✅ ВСЕ КНОПКИ РАБОТАЮТ!")
-    print("✅ ИНФОРМАЦИЯ ТОЖЕ!")
     
     while True:
         try:
