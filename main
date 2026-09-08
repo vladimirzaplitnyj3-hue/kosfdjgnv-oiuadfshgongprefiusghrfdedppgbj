@@ -11,7 +11,7 @@ PHOTO_URL = "https://i.ibb.co/67pwkmfb/IMG-3088.jpg"
 # Хранилище данных пользователей
 user_data = {}
 
-# ЦЕНЫ UC (обновлённые)
+# ЦЕНЫ UC
 UC_PRICES = {
     "60": 75,
     "325": 390,
@@ -21,7 +21,7 @@ UC_PRICES = {
     "8100": 8630
 }
 
-# ЦЕНЫ ПОПУЛЯРНОСТИ (из скриншота)
+# ЦЕНЫ ПОПУЛЯРНОСТИ
 POPULARITY_PRICES = {
     "10000": 176,
     "20000": 307,
@@ -95,9 +95,9 @@ def get_cart_total(cart):
     total_price = sum(UC_PRICES.get(k, 0) * v for k, v in cart.items())
     return total_uc, total_price
 
-# ========== КЛАВИАТУРЫ ==========
+# ========== КЛАВИАТУРЫ (С ПРЕМИУМ-ЭМОДЗИ) ==========
 
-# ГЛАВНОЕ МЕНЮ
+# ГЛАВНОЕ МЕНЮ (премиум-эмодзи 💵 и ⭐️)
 def get_main_menu():
     return {
         "inline_keyboard": [
@@ -125,7 +125,7 @@ def get_main_menu():
         ]
     }
 
-# МЕНЮ КОРЗИНЫ (с премиум-эмодзи 💵)
+# МЕНЮ КОРЗИНЫ (премиум-эмодзи 💵 на всех кнопках)
 def get_cart_menu():
     return {
         "inline_keyboard": [
@@ -142,7 +142,7 @@ def get_cart_menu():
         ]
     }
 
-# МЕНЮ ПОПУЛЯРНОСТИ (с ценами из скриншота)
+# МЕНЮ ПОПУЛЯРНОСТИ
 def get_popularity_menu():
     return {
         "inline_keyboard": [
@@ -540,10 +540,11 @@ def handle_update(update):
 def main():
     offset = None
     print("🚀 Бот KRANZAYY UC BOT запущен!")
-    print("✅ Цветные кнопки работают!")
-    print("✅ Премиум-эмодзи 💵 на всех кнопках с UC!")
-    print("✅ Новые цены на UC: 60-75₽, 325-390₽, 660-760₽, 1800-1990₽, 3850-4000₽")
-    print("✅ Цены на популярность из скриншота!")
+    print("✅ Премиум-эмодзи 💵 на всех кнопках с UC")
+    print("✅ Премиум-эмодзи ⭐️ на кнопке Популярность")
+    print("✅ Цветные кнопки (зелёные, синие, красные)")
+    print("✅ Фото в главном меню")
+    print("✅ Новые цены на UC")
     while True:
         try:
             url = f"{BASE_URL}/getUpdates"
