@@ -57,6 +57,7 @@ logger.info("🚀 БОТ ЗАПУЩЕН (ТОЛЬКО ПРЕМИУМ-ЭМОДЗ�
 # ========== ХРАНИЛИЩЕ ==========
 user_data = {}
 orders = {}
+last_message_ids = {}  # Храним ID последнего сообщения для каждого пользователя
 
 # ========== ФУНКЦИЯ ЗАПРОСОВ ==========
 def api_request(method, payload):
@@ -87,7 +88,10 @@ def send_message(chat_id, text, reply_markup=None, parse_mode="HTML"):
     payload = {"chat_id": chat_id, "text": text, "parse_mode": parse_mode}
     if reply_markup:
         payload["reply_markup"] = json.dumps(reply_markup)
-    return api_request("sendMessage", payload)
+    result = api_request("sendMessage", payload)
+    if result.get("ok"):
+        last_message_ids[str(chat_id)] = result["result"]["message_id"]
+    return result
 
 def send_photo(chat_id, photo, caption=None, reply_markup=None, parse_mode="HTML"):
     payload = {"chat_id": chat_id, "photo": photo, "parse_mode": parse_mode}
@@ -95,9 +99,13 @@ def send_photo(chat_id, photo, caption=None, reply_markup=None, parse_mode="HTML
         payload["caption"] = caption
     if reply_markup:
         payload["reply_markup"] = json.dumps(reply_markup)
-    return api_request("sendPhoto", payload)
+    result = api_request("sendPhoto", payload)
+    if result.get("ok"):
+        last_message_ids[str(chat_id)] = result["result"]["message_id"]
+    return result
 
 def edit_message(chat_id, message_id, text, reply_markup=None, parse_mode="HTML"):
+    # Проверяем, что сообщение существует и это текстовое
     payload = {"chat_id": chat_id, "message_id": message_id, "text": text, "parse_mode": parse_mode}
     if reply_markup:
         payload["reply_markup"] = json.dumps(reply_markup)
@@ -401,17 +409,20 @@ def handle_update(update):
             # ---- НАЗАД (С ФОТО) ----
             if data == "back_to_main":
                 try:
+                    # Удаляем старое сообщение
+                    delete_message(chat_id, message_id)
+                    # Отправляем новое с фото
                     send_photo(
                         chat_id,
                         PHOTO_URL,
                         caption=f'<tg-emoji emoji-id="{EMOJI_WAVE}">👋</tg-emoji> Главное меню:',
                         reply_markup=main_menu()
                     )
-                    delete_message(chat_id, message_id)
-                except:
-                    edit_message(
+                except Exception as e:
+                    logger.error(f"Ошибка при возврате в главное меню: {e}")
+                    # Если не получилось с фото, отправляем текстовое
+                    send_message(
                         chat_id,
-                        message_id,
                         f'<tg-emoji emoji-id="{EMOJI_WAVE}">👋</tg-emoji> Главное меню:',
                         main_menu()
                     )
@@ -606,17 +617,16 @@ def handle_update(update):
                 user_data[user_id]["temp"] = {}
                 answer_callback(cb_id, f'<tg-emoji emoji-id="{EMOJI_CROSS}">❌</tg-emoji> Заказ отменён')
                 try:
+                    delete_message(chat_id, message_id)
                     send_photo(
                         chat_id,
                         PHOTO_URL,
                         caption=f'<tg-emoji emoji-id="{EMOJI_CROSS}">❌</tg-emoji> Заказ отменён',
                         reply_markup=main_menu()
                     )
-                    delete_message(chat_id, message_id)
                 except:
-                    edit_message(
+                    send_message(
                         chat_id,
-                        message_id,
                         f'<tg-emoji emoji-id="{EMOJI_CROSS}">❌</tg-emoji> Заказ отменён',
                         main_menu()
                     )
@@ -773,8 +783,7 @@ def main():
     logger.info("💎 Все эмодзи заменены на премиум-версии")
     logger.info("🏦 Сбербанк указан в реквизитах")
     logger.info("⭐️ Популярность в отдельной корзине")
-    logger.info("📸 Фото в главном меню")
-    logger.info("✅ PUBG ID отправляется владельцу")
+    logger.info("📸 Фото в главном меню (исправлено)")
     logger.info("=" * 50)
     
     while True:
