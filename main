@@ -21,14 +21,13 @@ BOT_TOKEN = "8833181446:AAFqiKedQpDm04CYP6tg4vb0MjH-k3M4GUw"
 BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 PHOTO_URL = "https://i.ibb.co/67pwkmfb/IMG-3088.jpg"
 
-# ID ПРЕМИУМ-ЭМОДЗИ (ТОЛЬКО ОНИ, БЕЗ ОБЫЧНЫХ)
+# ========== ID ПРЕМИУМ-ЭМОДЗИ ==========
 EMOJI_UC = "5318970495314436977"
 EMOJI_STAR = "5316970857325687050"
 EMOJI_HEART = "5346301287774323405"
 EMOJI_FIRE = "5330051403563943171"
 EMOJI_SPARKLE = "5330245862503236304"
 EMOJI_STAR2 = "5327866716909229540"
-EMOJI_PIN = "5231102735817918643"
 EMOJI_SHOP = "5318970495314436977"
 EMOJI_MEGAPHONE = "5931395439738755762"
 EMOJI_METRO = "5357432498680767940"
@@ -37,66 +36,36 @@ EMOJI_DIAMOND = "5465556444931718975"
 EMOJI_SUPPORT = "5971889748615105853"
 
 logger.info("🚀 БОТ ЗАПУЩЕН")
-logger.info(f"📸 Фото будет загружаться из: {PHOTO_URL}")
 
 # ========== ХРАНИЛИЩЕ ==========
 user_data = {}
 
-# ========== ФУНКЦИЯ ЗАПРОСОВ С ЛОГИРОВАНИЕМ ==========
+# ========== ФУНКЦИЯ ЗАПРОСОВ ==========
 def api_request(method, payload):
-    """Универсальная функция для запросов к API"""
     url = f"{BASE_URL}/{method}"
-    
-    # Логируем запрос (без полного payload для безопасности)
-    log_payload = {k: v for k, v in payload.items() if k not in ['text', 'caption']}
-    if 'text' in payload:
-        log_payload['text'] = payload['text'][:100] + '...' if len(payload['text']) > 100 else payload['text']
-    logger.debug(f"📤 {method} | {json.dumps(log_payload, ensure_ascii=False)}")
-    
     try:
         response = requests.post(url, json=payload, timeout=30)
         result = response.json()
-        
-        if result.get("ok"):
-            logger.debug(f"✅ {method} успешно")
-        else:
-            error_desc = result.get('description', 'Неизвестная ошибка')
-            logger.error(f"❌ Ошибка {method}: {error_desc}")
-            
+        if not result.get("ok"):
+            logger.error(f"❌ Ошибка {method}: {result.get('description', 'Неизвестная')}")
         return result
-    except requests.exceptions.Timeout:
-        logger.error(f"⏰ Таймаут {method}")
-        return {"ok": False, "error": "timeout"}
-    except requests.exceptions.ConnectionError:
-        logger.error(f"🔌 Ошибка подключения {method}")
-        return {"ok": False, "error": "connection"}
     except Exception as e:
-        logger.error(f"💥 Критическая ошибка {method}: {e}")
-        logger.error(traceback.format_exc())
+        logger.error(f"💥 Ошибка {method}: {e}")
         return {"ok": False, "error": str(e)}
 
 # ========== ОСНОВНЫЕ ФУНКЦИИ ==========
 def send_message(chat_id, text, reply_markup=None, parse_mode="HTML"):
-    payload = {
-        "chat_id": chat_id,
-        "text": text,
-        "parse_mode": parse_mode
-    }
+    payload = {"chat_id": chat_id, "text": text, "parse_mode": parse_mode}
     if reply_markup:
         payload["reply_markup"] = json.dumps(reply_markup)
     return api_request("sendMessage", payload)
 
 def send_photo(chat_id, photo, caption=None, reply_markup=None, parse_mode="HTML"):
-    payload = {
-        "chat_id": chat_id,
-        "photo": photo,
-        "parse_mode": parse_mode
-    }
+    payload = {"chat_id": chat_id, "photo": photo, "parse_mode": parse_mode}
     if caption:
         payload["caption"] = caption
     if reply_markup:
         payload["reply_markup"] = json.dumps(reply_markup)
-    logger.info(f"📸 Отправка фото в чат {chat_id}")
     return api_request("sendPhoto", payload)
 
 def edit_message(chat_id, message_id, text, reply_markup=None, parse_mode="HTML"):
@@ -122,40 +91,18 @@ def delete_message(chat_id, message_id):
     payload = {"chat_id": chat_id, "message_id": message_id}
     return api_request("deleteMessage", payload)
 
-# ========== КЛАВИАТУРЫ (ТОЛЬКО ПРЕМИУМ-ЭМОДЗИ) ==========
+# ========== КЛАВИАТУРЫ ==========
 
 def main_menu():
-    """Главное меню — только премиум-эмодзи, без обычных"""
     return {
         "inline_keyboard": [
-            [
-                {
-                    "text": "Купить UC",
-                    "callback_data": "buy_uc",
-                    "style": "success",
-                    "icon_custom_emoji_id": EMOJI_UC
-                }
-            ],
-            [
-                {
-                    "text": "Популярность",
-                    "callback_data": "popularity",
-                    "style": "primary",
-                    "icon_custom_emoji_id": EMOJI_STAR
-                }
-            ],
-            [
-                {
-                    "text": "Информация",
-                    "callback_data": "info",
-                    "style": "danger"
-                }
-            ]
+            [{"text": "Купить UC", "callback_data": "buy_uc", "style": "success", "icon_custom_emoji_id": EMOJI_UC}],
+            [{"text": "Популярность", "callback_data": "popularity", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
+            [{"text": "Информация", "callback_data": "info", "style": "danger"}]
         ]
     }
 
 def cart_menu():
-    """Корзина — только премиум-эмодзи на кнопках с UC"""
     return {
         "inline_keyboard": [
             [{"text": "60 UC - 75₽", "callback_data": "add_60", "style": "success", "icon_custom_emoji_id": EMOJI_UC}],
@@ -171,7 +118,6 @@ def cart_menu():
     }
 
 def popularity_menu():
-    """Популярность — только премиум-эмодзи на всех кнопках"""
     return {
         "inline_keyboard": [
             [{"text": "10 000 ПП - 176₽", "callback_data": "pop_10000", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
@@ -193,33 +139,21 @@ def popularity_menu():
 
 def handle_update(update):
     try:
-        logger.debug(f"📩 Получен update ID: {update.get('update_id', 'unknown')}")
-        
         # ===== СООБЩЕНИЯ =====
         if "message" in update:
             msg = update["message"]
             chat_id = msg["chat"]["id"]
             text = msg.get("text", "")
-            logger.info(f"💬 Сообщение от {chat_id}: {text[:100]}")
             
             if text == "/start":
-                logger.info(f"🔄 Отправка главного меню в чат {chat_id}")
-                
                 # Пробуем отправить фото
-                try:
-                    result = send_photo(
-                        chat_id,
-                        PHOTO_URL,
-                        caption="👋 Добро пожаловать в KRANZAYY UC BOT!\n\nВыберите действие:",
-                        reply_markup=main_menu()
-                    )
-                    if result.get("ok"):
-                        logger.info(f"✅ Фото успешно отправлено")
-                    else:
-                        logger.error(f"❌ Ошибка фото: {result}")
-                        send_message(chat_id, "👋 Добро пожаловать в KRANZAYY UC BOT!\n\nВыберите действие:", main_menu())
-                except Exception as e:
-                    logger.error(f"❌ Исключение при фото: {e}")
+                result = send_photo(
+                    chat_id,
+                    PHOTO_URL,
+                    caption="👋 Добро пожаловать в KRANZAYY UC BOT!\n\nВыберите действие:",
+                    reply_markup=main_menu()
+                )
+                if not result.get("ok"):
                     send_message(chat_id, "👋 Добро пожаловать в KRANZAYY UC BOT!\n\nВыберите действие:", main_menu())
             return
         
@@ -231,75 +165,59 @@ def handle_update(update):
             data = cb["data"]
             cb_id = cb["id"]
             
-            logger.info(f"🖱 Нажата кнопка: {data} от {chat_id}")
+            logger.info(f"🖱 Нажата кнопка: {data}")
             
             # ---- НАЗАД ----
             if data == "back_to_main":
-                logger.debug("↩️ Возврат в главное меню")
-                result = edit_message(chat_id, message_id, "👋 Главное меню:", main_menu())
-                if not result.get("ok"):
-                    logger.error(f"❌ Ошибка edit_message: {result}")
+                # Отправляем новое сообщение с меню, а старое удаляем
+                send_message(chat_id, "👋 Главное меню:", main_menu())
+                delete_message(chat_id, message_id)
                 answer_callback(cb_id)
                 return
             
             # ---- UC ----
             if data == "buy_uc":
-                logger.debug("🛒 Открытие корзины")
-                result = edit_message(chat_id, message_id, "🛒 Выберите количество UC:", cart_menu())
-                if not result.get("ok"):
-                    logger.error(f"❌ Ошибка edit_message: {result}")
+                send_message(chat_id, "🛒 Выберите количество UC:", cart_menu())
+                delete_message(chat_id, message_id)
                 answer_callback(cb_id)
                 return
             
             if data.startswith("add_"):
                 amount = data.split("_")[1]
-                logger.info(f"➕ Добавлено {amount} UC")
                 answer_callback(cb_id, f"✅ +{amount} UC!")
-                result = edit_message(chat_id, message_id, f"✅ {amount} UC добавлено в корзину!", cart_menu())
-                if not result.get("ok"):
-                    logger.error(f"❌ Ошибка edit_message: {result}")
+                send_message(chat_id, f"✅ {amount} UC добавлено в корзину!", cart_menu())
+                delete_message(chat_id, message_id)
                 return
             
             if data == "clear_cart":
-                logger.info("🗑 Очистка корзины")
                 answer_callback(cb_id, "🗑 Корзина очищена!")
-                result = edit_message(chat_id, message_id, "🛒 Корзина пуста", cart_menu())
-                if not result.get("ok"):
-                    logger.error(f"❌ Ошибка edit_message: {result}")
+                send_message(chat_id, "🛒 Корзина пуста", cart_menu())
+                delete_message(chat_id, message_id)
                 return
             
             if data == "checkout":
-                logger.info("✅ Оформление заказа")
                 answer_callback(cb_id, "✅ Заказ оформлен!")
                 send_message(chat_id, "✅ Заказ оформлен!\nОжидайте подтверждения оператора.")
-                result = edit_message(chat_id, message_id, "🛒 Заказ оформлен", cart_menu())
-                if not result.get("ok"):
-                    logger.error(f"❌ Ошибка edit_message: {result}")
+                delete_message(chat_id, message_id)
                 return
             
             # ---- ПОПУЛЯРНОСТЬ ----
             if data == "popularity":
-                logger.debug("⭐️ Открытие меню популярности")
-                result = edit_message(chat_id, message_id, "⭐️ Выберите количество популярности:", popularity_menu())
-                if not result.get("ok"):
-                    logger.error(f"❌ Ошибка edit_message: {result}")
+                send_message(chat_id, "⭐️ Выберите количество популярности:", popularity_menu())
+                delete_message(chat_id, message_id)
                 answer_callback(cb_id)
                 return
             
             if data.startswith("pop_"):
                 amount = data.split("_")[1]
                 formatted = f"{int(amount):,}".replace(",", " ")
-                logger.info(f"⭐️ Выбрано {formatted} ПП")
                 answer_callback(cb_id, f"✅ Выбрано {formatted} ПП!")
-                send_message(chat_id, f"✅ Вы выбрали {formatted} ПП\n\nОжидайте, оператор свяжется с вами!\n\n🆘 Поддержка: @M_K_B_59")
-                result = edit_message(chat_id, message_id, f"✅ Выбрано {formatted} ПП", popularity_menu())
-                if not result.get("ok"):
-                    logger.error(f"❌ Ошибка edit_message: {result}")
+                send_message(chat_id, f"✅ Вы выбрали {formatted} ПП\n\nОжидайте, оператор свяжется с вами!\n\nПоддержка: @M_K_B_59")
+                delete_message(chat_id, message_id)
                 return
             
             # ---- ИНФОРМАЦИЯ ----
             if data == "info":
-                logger.info("ℹ️ Открытие информации")
                 text = (
                     "ℹ️ KRANZAYY UC BOT\n\n"
                     "Наш бот работает для вас "
@@ -308,7 +226,7 @@ def handle_update(update):
                     f'<tg-emoji emoji-id="{EMOJI_SPARKLE}">✨</tg-emoji>'
                     f'<tg-emoji emoji-id="{EMOJI_SPARKLE}">✨</tg-emoji>'
                     f'<tg-emoji emoji-id="{EMOJI_STAR2}">💫</tg-emoji>\n\n'
-                    "📌 Наши ресурсы:\n"
+                    "Наши ресурсы:\n"
                     f'<tg-emoji emoji-id="{EMOJI_SHOP}">🛒</tg-emoji> Магазин - https://t.me/kranzayyuc\n'
                     f'<tg-emoji emoji-id="{EMOJI_MEGAPHONE}">📢</tg-emoji> Канал - https://t.me/KRANZAYY_STORE\n'
                     f'<tg-emoji emoji-id="{EMOJI_METRO}">🏪</tg-emoji> Метро шоп - https://t.me/MetroShop_Kranzayy\n'
@@ -319,9 +237,8 @@ def handle_update(update):
                     f'<tg-emoji emoji-id="{EMOJI_DIAMOND}">💎</tg-emoji>\n\n'
                     f'<tg-emoji emoji-id="{EMOJI_SUPPORT}">🆘</tg-emoji> Техническая поддержка: @M_K_B_59'
                 )
-                result = edit_message(chat_id, message_id, text, main_menu(), parse_mode="HTML")
-                if not result.get("ok"):
-                    logger.error(f"❌ Ошибка edit_message: {result}")
+                send_message(chat_id, text, main_menu(), parse_mode="HTML")
+                delete_message(chat_id, message_id)
                 answer_callback(cb_id)
                 return
             
@@ -330,7 +247,7 @@ def handle_update(update):
             answer_callback(cb_id, "❌ Неизвестная команда")
     
     except Exception as e:
-        logger.error(f"💥 КРИТИЧЕСКАЯ ОШИБКА В HANDLE_UPDATE: {e}")
+        logger.error(f"💥 ОШИБКА: {e}")
         logger.error(traceback.format_exc())
 
 # ========== ЗАПУСК ==========
@@ -338,9 +255,8 @@ def handle_update(update):
 def main():
     offset = None
     logger.info("=" * 50)
-    logger.info("🚀 БОТ ЗАПУЩЕН С ЛОГИРОВАНИЕМ")
-    logger.info(f"📸 Фото: {PHOTO_URL}")
-    logger.info(f"💎 Премиум-эмодзи: UC={EMOJI_UC}, STAR={EMOJI_STAR}")
+    logger.info("🚀 БОТ ЗАПУЩЕН")
+    logger.info("💎 Только премиум-эмодзи (без обычных)")
     logger.info("=" * 50)
     
     while True:
@@ -356,19 +272,11 @@ def main():
                     handle_update(update)
                     offset = update["update_id"] + 1
             else:
-                logger.error(f"❌ Ошибка getUpdates: {response}")
+                logger.error(f"❌ Ошибка: {response}")
             
             time.sleep(0.5)
-        
-        except requests.exceptions.Timeout:
-            logger.warning("⏰ Таймаут getUpdates, переподключение...")
-            time.sleep(2)
-        except requests.exceptions.ConnectionError:
-            logger.error("🔌 Ошибка подключения к Telegram API")
-            time.sleep(10)
         except Exception as e:
-            logger.error(f"💥 КРИТИЧЕСКАЯ ОШИБКА В MAIN: {e}")
-            logger.error(traceback.format_exc())
+            logger.error(f"💥 Ошибка: {e}")
             time.sleep(10)
 
 if __name__ == "__main__":
