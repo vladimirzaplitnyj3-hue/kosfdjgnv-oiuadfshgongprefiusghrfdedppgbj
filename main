@@ -8,7 +8,7 @@ BOT_TOKEN = "8833181446:AAFqiKedQpDm04CYP6tg4vb0MjH-k3M4GUw"
 BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 PHOTO_URL = "https://i.ibb.co/67pwkmfb/IMG-3088.jpg"
 
-# ID ПРЕМИУМ-ЭМОДЗИ ДЛЯ КНОПОК
+# ID ПРЕМИУМ-ЭМОДЗИ
 EMOJI_UC = "5318970495314436977"      # 💵
 EMOJI_STAR = "5316970857325687050"    # ⭐️
 
@@ -102,29 +102,26 @@ def get_cart_total(cart):
 
 # ========== КЛАВИАТУРЫ ==========
 
-# ГЛАВНОЕ МЕНЮ (с премиум-эмодзи в кнопках)
 def get_main_menu():
     return {
         "inline_keyboard": [
             [
                 {
-                    "text": "Купить UC быстро",
+                    "text": "💵 Купить UC быстро",
                     "callback_data": "buy_uc_fast",
-                    "style": "success",
-                    "icon_custom_emoji_id": EMOJI_UC
+                    "style": "success"
                 }
             ],
             [
                 {
-                    "text": "Популярность",
+                    "text": "⭐️ Популярность",
                     "callback_data": "popularity",
-                    "style": "primary",
-                    "icon_custom_emoji_id": EMOJI_STAR
+                    "style": "primary"
                 }
             ],
             [
                 {
-                    "text": "Информация",
+                    "text": "ℹ️ Информация",
                     "callback_data": "info",
                     "style": "danger"
                 }
@@ -132,16 +129,15 @@ def get_main_menu():
         ]
     }
 
-# МЕНЮ КОРЗИНЫ
 def get_cart_menu():
     return {
         "inline_keyboard": [
-            [{"text": "60 UC - 75₽", "callback_data": "add_60", "style": "success", "icon_custom_emoji_id": EMOJI_UC}],
-            [{"text": "325 UC - 390₽", "callback_data": "add_325", "style": "success", "icon_custom_emoji_id": EMOJI_UC}],
-            [{"text": "660 UC - 760₽", "callback_data": "add_660", "style": "success", "icon_custom_emoji_id": EMOJI_UC}],
-            [{"text": "1800 UC - 1990₽", "callback_data": "add_1800", "style": "success", "icon_custom_emoji_id": EMOJI_UC}],
-            [{"text": "3850 UC - 4000₽", "callback_data": "add_3850", "style": "success", "icon_custom_emoji_id": EMOJI_UC}],
-            [{"text": "8100 UC - 8630₽", "callback_data": "add_8100", "style": "success", "icon_custom_emoji_id": EMOJI_UC}],
+            [{"text": "💵 60 UC - 75₽", "callback_data": "add_60", "style": "success"}],
+            [{"text": "💵 325 UC - 390₽", "callback_data": "add_325", "style": "success"}],
+            [{"text": "💵 660 UC - 760₽", "callback_data": "add_660", "style": "success"}],
+            [{"text": "💵 1800 UC - 1990₽", "callback_data": "add_1800", "style": "success"}],
+            [{"text": "💵 3850 UC - 4000₽", "callback_data": "add_3850", "style": "success"}],
+            [{"text": "💵 8100 UC - 8630₽", "callback_data": "add_8100", "style": "success"}],
             [{"text": "✏️ Купить своё количество", "callback_data": "custom_amount", "style": "primary"}],
             [{"text": "✅ Оформить заказ", "callback_data": "checkout", "style": "success"}],
             [{"text": "🗑 Очистить корзину", "callback_data": "clear_cart", "style": "danger"}],
@@ -149,21 +145,20 @@ def get_cart_menu():
         ]
     }
 
-# МЕНЮ ПОПУЛЯРНОСТИ
 def get_popularity_menu():
     return {
         "inline_keyboard": [
-            [{"text": "10 000 ПП - 176₽", "callback_data": "pop_10000", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
-            [{"text": "20 000 ПП - 307₽", "callback_data": "pop_20000", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
-            [{"text": "30 000 ПП - 439₽", "callback_data": "pop_30000", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
-            [{"text": "40 000 ПП - 578₽", "callback_data": "pop_40000", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
-            [{"text": "50 000 ПП - 715₽", "callback_data": "pop_50000", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
-            [{"text": "60 000 ПП - 857₽", "callback_data": "pop_60000", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
-            [{"text": "70 000 ПП - 989₽", "callback_data": "pop_70000", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
-            [{"text": "100 000 ПП - 1375₽", "callback_data": "pop_100000", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
-            [{"text": "150 000 ПП - 1994₽", "callback_data": "pop_150000", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
-            [{"text": "200 000 ПП - 2612₽", "callback_data": "pop_200000", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
-            [{"text": "500 000 ПП - 6272₽", "callback_data": "pop_500000", "style": "primary", "icon_custom_emoji_id": EMOJI_STAR}],
+            [{"text": "⭐️ 10 000 ПП - 176₽", "callback_data": "pop_10000", "style": "primary"}],
+            [{"text": "⭐️ 20 000 ПП - 307₽", "callback_data": "pop_20000", "style": "primary"}],
+            [{"text": "⭐️ 30 000 ПП - 439₽", "callback_data": "pop_30000", "style": "primary"}],
+            [{"text": "⭐️ 40 000 ПП - 578₽", "callback_data": "pop_40000", "style": "primary"}],
+            [{"text": "⭐️ 50 000 ПП - 715₽", "callback_data": "pop_50000", "style": "primary"}],
+            [{"text": "⭐️ 60 000 ПП - 857₽", "callback_data": "pop_60000", "style": "primary"}],
+            [{"text": "⭐️ 70 000 ПП - 989₽", "callback_data": "pop_70000", "style": "primary"}],
+            [{"text": "⭐️ 100 000 ПП - 1375₽", "callback_data": "pop_100000", "style": "primary"}],
+            [{"text": "⭐️ 150 000 ПП - 1994₽", "callback_data": "pop_150000", "style": "primary"}],
+            [{"text": "⭐️ 200 000 ПП - 2612₽", "callback_data": "pop_200000", "style": "primary"}],
+            [{"text": "⭐️ 500 000 ПП - 6272₽", "callback_data": "pop_500000", "style": "primary"}],
             [{"text": "🏠 Главное меню", "callback_data": "back_to_main", "style": "primary"}],
         ]
     }
@@ -212,6 +207,7 @@ def get_cancel_menu():
 
 def handle_update(update):
     try:
+        # ОБРАБОТКА СООБЩЕНИЙ
         if "message" in update:
             message = update["message"]
             chat_id = message["chat"]["id"]
@@ -221,6 +217,7 @@ def handle_update(update):
             if user_id not in user_data:
                 user_data[user_id] = {"cart": {}, "step": "main", "temp": {}}
             
+            # /start
             if text == "/start":
                 try:
                     send_photo(
@@ -237,6 +234,7 @@ def handle_update(update):
                     )
                 return
             
+            # Ввод PUBG ID
             if user_data[user_id].get("step") == "waiting_pubg_id":
                 if not text.isdigit() or len(text) < 5:
                     send_message(chat_id, "❌ Неверный формат. Введите только цифры (минимум 5):", reply_markup=get_cancel_menu())
@@ -246,6 +244,7 @@ def handle_update(update):
                 send_message(chat_id, "🆔 Введите ваш никнейм в PUBG:", reply_markup=get_cancel_menu())
                 return
             
+            # Ввод никнейма
             if user_data[user_id].get("step") == "waiting_nickname":
                 if len(text) < 2:
                     send_message(chat_id, "❌ Никнейм слишком короткий.", reply_markup=get_cancel_menu())
@@ -260,6 +259,7 @@ def handle_update(update):
                 )
                 return
             
+            # Ввод своей суммы UC
             if user_data[user_id].get("step") == "waiting_custom_uc":
                 try:
                     amount = int(text)
@@ -274,6 +274,7 @@ def handle_update(update):
                     send_message(chat_id, "❌ Введите число", reply_markup=get_cancel_menu())
                 return
             
+            # Ввод чаевых
             if user_data[user_id].get("step") == "waiting_tip":
                 try:
                     tip = float(text.replace("₽", "").strip())
@@ -291,6 +292,7 @@ def handle_update(update):
                     send_message(chat_id, "❌ Введите корректную сумму", reply_markup=get_tips_menu())
                 return
         
+        # ОБРАБОТКА КНОПОК
         elif "callback_query" in update:
             callback = update["callback_query"]
             chat_id = callback["message"]["chat"]["id"]
@@ -302,7 +304,7 @@ def handle_update(update):
             if user_id not in user_data:
                 user_data[user_id] = {"cart": {}, "step": "main", "temp": {}}
             
-            # ГЛАВНОЕ МЕНЮ
+            # ===== ГЛАВНОЕ МЕНЮ =====
             if data == "back_to_main":
                 try:
                     send_photo(chat_id, PHOTO_URL, caption="👋 Главное меню:", reply_markup=get_main_menu())
@@ -312,7 +314,7 @@ def handle_update(update):
                 answer_callback(callback_id)
                 return
             
-            # UC
+            # ===== UC =====
             if data == "buy_uc_fast":
                 cart = user_data[user_id]["cart"]
                 total_uc, total_price = get_cart_total(cart)
@@ -327,6 +329,7 @@ def handle_update(update):
                 answer_callback(callback_id)
                 return
             
+            # Добавление в корзину
             if data.startswith("add_"):
                 amount = data.split("_")[1]
                 user_data[user_id]["cart"][amount] = user_data[user_id]["cart"].get(amount, 0) + 1
@@ -343,18 +346,21 @@ def handle_update(update):
                 edit_message(chat_id, message_id, text, reply_markup=get_cart_menu())
                 return
             
+            # Очистка корзины
             if data == "clear_cart":
                 user_data[user_id]["cart"] = {}
                 answer_callback(callback_id, "🗑 Корзина очищена!")
                 edit_message(chat_id, message_id, "🛒 Корзина пуста", reply_markup=get_cart_menu())
                 return
             
+            # Своё количество
             if data == "custom_amount":
                 user_data[user_id]["step"] = "waiting_custom_uc"
                 answer_callback(callback_id)
                 send_message(chat_id, "✏️ Сколько UC хотите? (минимум 60):", reply_markup=get_cancel_menu())
                 return
             
+            # Оформление заказа
             if data == "checkout":
                 if not user_data[user_id]["cart"]:
                     answer_callback(callback_id, "❌ Корзина пуста!", True)
@@ -364,7 +370,7 @@ def handle_update(update):
                 send_message(chat_id, "🆔 Введите ваш PUBG ID (только цифры):", reply_markup=get_cancel_menu())
                 return
             
-            # ПОПУЛЯРНОСТЬ
+            # ===== ПОПУЛЯРНОСТЬ =====
             if data == "popularity":
                 text = (
                     "✨ <b>Популярность</b> ✨\n\n"
@@ -379,6 +385,7 @@ def handle_update(update):
                 answer_callback(callback_id)
                 return
             
+            # Покупка популярности
             if data.startswith("pop_"):
                 amount = data.split("_")[1]
                 price = POPULARITY_PRICES.get(amount, 0)
@@ -391,33 +398,23 @@ def handle_update(update):
                 answer_callback(callback_id)
                 return
             
-            # ========== ИНФОРМАЦИЯ (С ПРЕМИУМ-ЭМОДЗИ) ==========
+            # ===== ИНФОРМАЦИЯ =====
             if data == "info":
                 text = (
                     "ℹ️ <b>KRANZAYY UC BOT</b>\n\n"
-                    "Наш бот работает специально для вас "
+                    "Наш бот работает для вас "
                     '<tg-emoji emoji-id="5346301287774323405">❤️‍🔥</tg-emoji>\n\n'
-                    '<tg-emoji emoji-id="5330051403563943171">🌟</tg-emoji>'
-                    '<tg-emoji emoji-id="5330245862503236304">✨</tg-emoji>'
-                    '<tg-emoji emoji-id="5330245862503236304">✨</tg-emoji>'
-                    '<tg-emoji emoji-id="5327866716909229540">💫</tg-emoji>\n\n'
-                    "Наши ресурсы: "
-                    '<tg-emoji emoji-id="5231102735817918643">📌</tg-emoji>\n\n'
-                    '<tg-emoji emoji-id="5318970495314436977">🛒</tg-emoji> Магазин - https://t.me/kranzayyuc\n'
-                    '<tg-emoji emoji-id="5931395439738755762">📢</tg-emoji> Телеграмм канал - https://t.me/KRANZAYY_STORE\n'
-                    '<tg-emoji emoji-id="5357432498680767940">🏪</tg-emoji> Метро шоп - https://t.me/MetroShop_Kranzayy\n'
-                    '<tg-emoji emoji-id="5219809810802829750">⭐</tg-emoji> Отзывы - https://t.me/Kranzayy_OTZ\n\n'
-                    '<tg-emoji emoji-id="5465556444931718975">💎</tg-emoji>'
-                    '<tg-emoji emoji-id="5465556444931718975">💎</tg-emoji>'
-                    '<tg-emoji emoji-id="5465556444931718975">💎</tg-emoji>'
-                    '<tg-emoji emoji-id="5465556444931718975">💎</tg-emoji>\n\n'
-                    '<tg-emoji emoji-id="5971889748615105853">🆘</tg-emoji> Техническая поддержка: @M_K_B_59'
+                    "📌 Наши ресурсы:\n"
+                    "🛒 Магазин - https://t.me/kranzayyuc\n"
+                    "📢 Канал - https://t.me/KRANZAYY_STORE\n"
+                    "⭐ Отзывы - https://t.me/Kranzayy_OTZ\n\n"
+                    "🆘 Поддержка: @M_K_B_59"
                 )
                 edit_message(chat_id, message_id, text, parse_mode="HTML", reply_markup=get_main_menu())
                 answer_callback(callback_id)
                 return
             
-            # ОПЛАТА
+            # ===== ОПЛАТА =====
             if data.startswith("payment_"):
                 method = data.split("_")[1]
                 names = {"sbp1": "СБП №1", "sbp2": "СБП №2", "card1": "Карта №1", "card2": "Карта №2", "foreign": "Иностранные"}
@@ -432,6 +429,7 @@ def handle_update(update):
                 answer_callback(callback_id)
                 return
             
+            # Другой метод
             if data == "another_method":
                 total_uc, total_price = get_cart_total(user_data[user_id]["cart"])
                 text = f"💳 Выберите способ:\n\n🆔 PUBG ID: {user_data[user_id]['temp'].get('pubg_id', '—')}\n💰 Сумма: {total_price:.2f}₽"
@@ -439,6 +437,7 @@ def handle_update(update):
                 answer_callback(callback_id)
                 return
             
+            # Перейти к оплате
             if data == "go_to_payment":
                 cart = user_data[user_id]["cart"]
                 total_uc, total_price = get_cart_total(cart)
@@ -455,7 +454,7 @@ def handle_update(update):
                 answer_callback(callback_id, "✅ Инструкция отправлена!")
                 return
             
-            # ЧАЕВЫЕ
+            # ===== ЧАЕВЫЕ =====
             if data.startswith("tip_"):
                 tip_type = data.split("_")[1]
                 if tip_type == "custom":
@@ -477,6 +476,7 @@ def handle_update(update):
                 )
                 return
             
+            # ===== ОТМЕНА =====
             if data == "cancel_order":
                 user_data[user_id]["step"] = "main"
                 user_data[user_id]["temp"] = {}
@@ -484,6 +484,7 @@ def handle_update(update):
                 answer_callback(callback_id)
                 return
             
+            # ===== НАЗАД В КОРЗИНУ =====
             if data == "back_to_cart":
                 user_data[user_id]["step"] = "main"
                 cart = user_data[user_id]["cart"]
@@ -499,18 +500,17 @@ def handle_update(update):
                 answer_callback(callback_id)
                 return
             
+            # ===== НЕИЗВЕСТНО =====
             answer_callback(callback_id, "❌ Неизвестная команда")
     
     except Exception as e:
-        print(f"❌ Ошибка: {e}")
+        print(f"❌ Ошибка в handle_update: {e}")
 
 # ========== ЗАПУСК ==========
 def main():
     offset = None
     print("🚀 Бот KRANZAYY UC BOT запущен!")
-    print("✅ Премиум-эмодзи в кнопках: 💵 и ⭐️")
-    print("✅ Премиум-эмодзи в разделе 'Информация'")
-    print("✅ Для работы премиум-эмодзи у владельца бота должен быть Telegram Premium!")
+    print("✅ Все кнопки должны работать!")
     
     while True:
         try:
@@ -522,9 +522,12 @@ def main():
                 for update in response.get("result", []):
                     handle_update(update)
                     offset = update["update_id"] + 1
+            else:
+                print(f"❌ Ошибка API: {response}")
+            
             time.sleep(0.5)
         except Exception as e:
-            print(f"❌ Ошибка: {e}")
+            print(f"❌ Ошибка в main: {e}")
             time.sleep(5)
 
 if __name__ == "__main__":
