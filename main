@@ -1,12 +1,26 @@
 import requests
 import json
 import time
+import re
 
 # ========== КОНФИГУРАЦИЯ ==========
 BOT_TOKEN = "8830398652:AAFtxT4KfBSaPIJCIfeApo452ve-wRxiq7Q"
 BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
-# ========== ФУНКЦИЯ ОТПРАВКИ ЗАПРОСОВ ==========
+# Хранилище данных пользователей
+user_data = {}
+
+# Цены UC
+UC_PRICES = {
+    "60": 91,
+    "325": 435,
+    "660": 884,
+    "1800": 2160,
+    "3850": 4318,
+    "8100": 8630
+}
+
+# ========== ФУНКЦИИ ==========
 def send_message(chat_id, text, reply_markup=None, parse_mode="HTML"):
     url = f"{BASE_URL}/sendMessage"
     payload = {
@@ -16,7 +30,6 @@ def send_message(chat_id, text, reply_markup=None, parse_mode="HTML"):
     }
     if reply_markup:
         payload["reply_markup"] = json.dumps(reply_markup)
-    
     response = requests.post(url, json=payload)
     return response.json()
 
@@ -30,78 +43,98 @@ def edit_message(chat_id, message_id, text, reply_markup=None, parse_mode="HTML"
     }
     if reply_markup:
         payload["reply_markup"] = json.dumps(reply_markup)
-    
     response = requests.post(url, json=payload)
     return response.json()
 
-def answer_callback(callback_id, text=None):
+def answer_callback(callback_id, text=None, show_alert=False):
     url = f"{BASE_URL}/answerCallbackQuery"
     payload = {"callback_query_id": callback_id}
     if text:
         payload["text"] = text
+    if show_alert:
+        payload["show_alert"] = True
     return requests.post(url, json=payload).json()
 
-# ========== КЛАВИАТУРЫ С ЦВЕТНЫМИ КНОПКАМИ (API 9.4) ==========
+def delete_message(chat_id, message_id):
+    url = f"{BASE_URL}/deleteMessage"
+    payload = {"chat_id": chat_id, "message_id": message_id}
+    return requests.post(url, json=payload).json()
 
-# Главное меню с цветными кнопками
+# ========== КЛАВИАТУРЫ ==========
+
+# Главное меню (8 кнопок как на фото, с цветами)
 def get_main_menu():
     return {
         "inline_keyboard": [
-            [
-                {
-                    "text": "UC по ID",
-                    "callback_data": "uc_by_id",
-                    "style": "primary",  # Синяя кнопка
-                    "icon_custom_emoji_id": "5310169226856644648"  # Иконка
-                }
-            ],
-            [
-                {
-                    "text": "Купить КОД",
-                    "callback_data": "buy_code",
-                    "style": "success",  # Зелёная кнопка
-                    "icon_custom_emoji_id": "5310076249404621168"
-                }
-            ],
-            [
-                {
-                    "text": "Информация",
-                    "callback_data": "info",
-                    "style": "danger",  # Красная кнопка
-                    "icon_custom_emoji_id": "5310080279764762661"
-                }
-            ]
+            [{"text": "🌐 САЙТ (ЛУЧШИЙ ВЫБОР)", "url": "https://t.me/kranzayyuc", "style": "primary"}],
+            [{"text": "📱 ОТКРЫТЬ ПРИЛОЖЕНИЕ", "callback_data": "open_app", "style": "primary"}],
+            [{"text": "⚡ Купить UC быстро", "callback_data": "buy_uc_fast", "style": "success"}],
+            [{"text": "📊 Популярность", "callback_data": "popularity", "style": "primary"}],
+            [{"text": "📋 Подписки", "callback_data": "subscriptions", "style": "primary"}],
+            [{"text": "ℹ️ Информация", "callback_data": "info", "style": "primary"}],
+            [{"text": "🎫 Промокоды", "callback_data": "promocodes", "style": "primary"}],
+            [{"text": "🌐 Интернет без ограничений", "callback_data": "unlimited_internet", "style": "primary"}],
         ]
     }
 
-# Меню "UC по ID" (синие кнопки)
-def get_uc_menu():
+# Меню корзины (все кнопки с цветами)
+def get_cart_menu():
     return {
         "inline_keyboard": [
-            [{"text": "60 UC - 79₽", "callback_data": "uc_60", "style": "primary"}],
-            [{"text": "325 UC - 425₽", "callback_data": "uc_325", "style": "primary"}],
-            [{"text": "660 UC - 843₽", "callback_data": "uc_660", "style": "primary"}],
-            [{"text": "1800 UC - 2118₽", "callback_data": "uc_1800", "style": "primary"}],
-            [{"text": "3850 UC - 4210₽", "callback_data": "uc_3850", "style": "primary"}],
-            [{"text": "8100 UC - 8372₽", "callback_data": "uc_8100", "style": "primary"}],
-            [{"text": "⬅️ Назад", "callback_data": "back_to_main", "style": "danger"}]
+            [{"text": "🟢 60 UC - 91₽", "callback_data": "add_60", "style": "primary"}],
+            [{"text": "🟢 325 UC - 435₽", "callback_data": "add_325", "style": "primary"}],
+            [{"text": "🟢 660 UC - 884₽", "callback_data": "add_660", "style": "primary"}],
+            [{"text": "🟢 1800 UC - 2160₽", "callback_data": "add_1800", "style": "primary"}],
+            [{"text": "🟢 3850 UC - 4318₽", "callback_data": "add_3850", "style": "primary"}],
+            [{"text": "🟢 8100 UC - 8630₽", "callback_data": "add_8100", "style": "primary"}],
+            [{"text": "✏️ Купить своё количество", "callback_data": "custom_amount", "style": "primary"}],
+            [{"text": "✅ Оформить заказ", "callback_data": "checkout", "style": "success"}],
+            [{"text": "🗑 Очистить корзину", "callback_data": "clear_cart", "style": "danger"}],
+            [{"text": "🏠 Главное меню", "callback_data": "back_to_main", "style": "primary"}],
         ]
     }
 
-# Меню "Купить КОД" (зелёные кнопки)
-def get_code_menu():
+# Меню чаевых
+def get_tips_menu():
     return {
         "inline_keyboard": [
-            [{"text": "60 UC - 79₽", "callback_data": "code_60", "style": "success"}],
-            [{"text": "325 UC - 425₽", "callback_data": "code_325", "style": "success"}],
-            [{"text": "660 UC - 843₽", "callback_data": "code_660", "style": "success"}],
-            [{"text": "1800 UC - 2118₽", "callback_data": "code_1800", "style": "success"}],
-            [{"text": "3850 UC - 4210₽", "callback_data": "code_3850", "style": "success"}],
-            [{"text": "8100 UC - 8372₽", "callback_data": "code_8100", "style": "success"}],
-            [{"text": "🛒 Корзина", "callback_data": "view_cart", "style": "primary"}],
-            [{"text": "🗑 Очистить", "callback_data": "clear_cart", "style": "danger"}],
-            [{"text": "✅ Оформить", "callback_data": "checkout", "style": "success"}],
-            [{"text": "⬅️ Назад", "callback_data": "back_to_main", "style": "danger"}]
+            [{"text": "🔵 10₽", "callback_data": "tip_10", "style": "primary"}],
+            [{"text": "🟢 50₽", "callback_data": "tip_50", "style": "primary"}],
+            [{"text": "🔴 100₽", "callback_data": "tip_100", "style": "danger"}],
+            [{"text": "✏️ Своя сумма", "callback_data": "custom_tip", "style": "primary"}],
+            [{"text": "⏭ Пропустить", "callback_data": "skip_tip", "style": "primary"}],
+            [{"text": "❌ Отменить", "callback_data": "cancel_order", "style": "danger"}],
+        ]
+    }
+
+# Меню оплаты
+def get_payment_menu():
+    return {
+        "inline_keyboard": [
+            [{"text": "🏦 СБП №1", "callback_data": "payment_sbp1", "style": "primary"}],
+            [{"text": "🏦 СБП №2", "callback_data": "payment_sbp2", "style": "primary"}],
+            [{"text": "💳 Карта №1", "callback_data": "payment_card1", "style": "primary"}],
+            [{"text": "💳 Карта №2", "callback_data": "payment_card2", "style": "primary"}],
+            [{"text": "🌍 Иностранные карты", "callback_data": "payment_foreign", "style": "primary"}],
+            [{"text": "❌ Отменить", "callback_data": "cancel_order", "style": "danger"}],
+        ]
+    }
+
+# Меню подтверждения
+def get_confirm_menu():
+    return {
+        "inline_keyboard": [
+            [{"text": "✅ Перейти к оплате", "callback_data": "go_to_payment", "style": "success"}],
+            [{"text": "🔄 Другой метод", "callback_data": "another_method", "style": "primary"}],
+            [{"text": "🏠 Главное меню", "callback_data": "back_to_main", "style": "primary"}],
+        ]
+    }
+
+# Меню отмены
+def get_cancel_menu():
+    return {
+        "inline_keyboard": [
+            [{"text": "❌ Отменить", "callback_data": "cancel_order", "style": "danger"}],
         ]
     }
 
@@ -112,13 +145,88 @@ def handle_update(update):
         message = update["message"]
         chat_id = message["chat"]["id"]
         text = message.get("text", "")
+        user_id = str(chat_id)
         
+        if user_id not in user_data:
+            user_data[user_id] = {"cart": {}, "step": "main", "temp": {}}
+        
+        # /start
         if text == "/start":
             send_message(
                 chat_id,
-                "👋 Добро пожаловать в магазин PUBG Mobile!\nВыберите действие:",
+                "👋 Добро пожаловать в магазин KRANZAYY UC BOT!\n\n"
+                "Используйте меню ниже для навигации:",
                 reply_markup=get_main_menu()
             )
+            return
+        
+        # Ввод PUBG ID
+        if user_data[user_id].get("step") == "waiting_pubg_id":
+            if not text.isdigit() or len(text) < 5:
+                send_message(chat_id, "❌ Неверный формат. Введите только цифры (минимум 5):", reply_markup=get_cancel_menu())
+                return
+            user_data[user_id]["temp"]["pubg_id"] = text
+            user_data[user_id]["step"] = "waiting_nickname"
+            send_message(chat_id, "🆔 Введите ваш никнейм в PUBG:", reply_markup=get_cancel_menu())
+            return
+        
+        # Ввод никнейма
+        if user_data[user_id].get("step") == "waiting_nickname":
+            if len(text) < 2:
+                send_message(chat_id, "❌ Никнейм слишком короткий.", reply_markup=get_cancel_menu())
+                return
+            user_data[user_id]["temp"]["nickname"] = text
+            user_data[user_id]["step"] = "main"
+            
+            cart = user_data[user_id]["cart"]
+            total_uc = sum(int(k) * v for k, v in cart.items())
+            total_price = sum(UC_PRICES.get(k, 0) * v for k, v in cart.items())
+            
+            send_message(
+                chat_id,
+                f"💳 Выберите способ оплаты:\n\n"
+                f"🆔 PUBG ID: {user_data[user_id]['temp']['pubg_id']}\n"
+                f"👤 Никнейм: {text}\n"
+                f"💰 Сумма: {total_price:.2f}₽\n\n"
+                f"🔹 СБП №1 - для всех версий банка\n"
+                f"🔹 Карта №1 - если нет доступа к банку",
+                reply_markup=get_payment_menu()
+            )
+            return
+        
+        # Ввод своей суммы UC
+        if user_data[user_id].get("step") == "waiting_custom_uc":
+            try:
+                amount = int(text)
+                if amount < 60:
+                    send_message(chat_id, "❌ Минимум 60 UC", reply_markup=get_cancel_menu())
+                    return
+                user_data[user_id]["cart"][str(amount)] = user_data[user_id]["cart"].get(str(amount), 0) + 1
+                user_data[user_id]["step"] = "main"
+                total_uc, total_price = get_cart_total(user_data[user_id]["cart"])
+                send_message(chat_id, f"✅ Добавлено {amount} UC! В корзине: {total_uc} UC — {total_price:.2f}₽", reply_markup=get_cart_menu())
+            except ValueError:
+                send_message(chat_id, "❌ Введите число", reply_markup=get_cancel_menu())
+            return
+        
+        # Ввод чаевых
+        if user_data[user_id].get("step") == "waiting_tip":
+            try:
+                tip = float(text.replace("₽", "").strip())
+                if tip < 0:
+                    raise ValueError
+                user_data[user_id]["temp"]["tip"] = tip
+                user_data[user_id]["step"] = "main"
+                cart = user_data[user_id]["cart"]
+                total_uc, total_price = get_cart_total(cart)
+                send_message(
+                    chat_id,
+                    f"✅ Чаевые {tip:.2f}₽ добавлены!\n💰 Итого: {total_price + tip:.2f}₽",
+                    reply_markup=get_confirm_menu()
+                )
+            except ValueError:
+                send_message(chat_id, "❌ Введите корректную сумму", reply_markup=get_tips_menu())
+            return
     
     elif "callback_query" in update:
         callback = update["callback_query"]
@@ -126,103 +234,257 @@ def handle_update(update):
         message_id = callback["message"]["message_id"]
         data = callback["data"]
         callback_id = callback["id"]
+        user_id = str(chat_id)
         
-        # Главное меню
+        if user_id not in user_data:
+            user_data[user_id] = {"cart": {}, "step": "main", "temp": {}}
+        
+        # ===== ГЛАВНОЕ МЕНЮ =====
         if data == "back_to_main":
+            edit_message(chat_id, message_id, "👋 Главное меню:", reply_markup=get_main_menu())
+            answer_callback(callback_id)
+            return
+        
+        # ===== UC =====
+        if data == "buy_uc_fast":
+            cart = user_data[user_id]["cart"]
+            total_uc, total_price = get_cart_total(cart)
+            text = "🛒 Корзина:\n\n" + "\n".join([f"• {k} UC x {v} = {UC_PRICES.get(k, 0) * v:.2f}₽" for k, v in cart.items()]) if cart else "Пусто"
+            text += f"\n\n📦 Итого: {total_uc} UC — {total_price:.2f}₽" if cart else ""
+            edit_message(chat_id, message_id, text, reply_markup=get_cart_menu())
+            answer_callback(callback_id)
+            return
+        
+        if data.startswith("add_"):
+            amount = data.split("_")[1]
+            user_data[user_id]["cart"][amount] = user_data[user_id]["cart"].get(amount, 0) + 1
+            total_uc, total_price = get_cart_total(user_data[user_id]["cart"])
+            answer_callback(callback_id, f"✅ +{amount} UC! Итого: {total_uc} UC")
+            # Обновляем корзину
+            cart = user_data[user_id]["cart"]
+            text = "🛒 Корзина:\n\n" + "\n".join([f"• {k} UC x {v} = {UC_PRICES.get(k, 0) * v:.2f}₽" for k, v in cart.items()]) if cart else "Пусто"
+            text += f"\n\n📦 Итого: {total_uc} UC — {total_price:.2f}₽" if cart else ""
+            edit_message(chat_id, message_id, text, reply_markup=get_cart_menu())
+            return
+        
+        if data == "clear_cart":
+            user_data[user_id]["cart"] = {}
+            answer_callback(callback_id, "🗑 Корзина очищена!")
+            edit_message(chat_id, message_id, "🛒 Корзина пуста", reply_markup=get_cart_menu())
+            return
+        
+        if data == "custom_amount":
+            user_data[user_id]["step"] = "waiting_custom_uc"
+            answer_callback(callback_id)
+            send_message(chat_id, "✏️ Сколько UC хотите? (минимум 60):", reply_markup=get_cancel_menu())
+            return
+        
+        if data == "checkout":
+            if not user_data[user_id]["cart"]:
+                answer_callback(callback_id, "❌ Корзина пуста!", True)
+                return
+            user_data[user_id]["step"] = "waiting_pubg_id"
+            answer_callback(callback_id)
+            send_message(chat_id, "🆔 Введите ваш PUBG ID (только цифры):", reply_markup=get_cancel_menu())
+            return
+        
+        # ===== ПОПУЛЯРНОСТЬ =====
+        if data == "popularity":
+            text = (
+                "✨ <b>Популярность</b> ✨\n\n"
+                "——————————————————–———\n\n"
+                "🛑 Купить Популярность Вы можете:\n"
+                "              <b>с 09:00 - 22:00 мск</b>\n\n"
+                "❕Не оформляйте заказ если до конца раунда осталось 30 минут ❕\n\n"
+                "——————————————————–———\n\n"
+                "⏳ <b>Средние время доставки 5-30 минут</b> ⏳"
+            )
+            edit_message(chat_id, message_id, text, parse_mode="HTML", reply_markup=get_main_menu())
+            answer_callback(callback_id)
+            return
+        
+        # ===== ПОДПИСКИ =====
+        if data == "subscriptions":
             edit_message(
                 chat_id,
                 message_id,
-                "👋 Главное меню:",
+                "📋 <b>Подписки KRANZAYY</b>\n\n"
+                "🔹 Канал - https://t.me/KRANZAYY_STORE\n"
+                "🔹 Магазин - https://t.me/kranzayyuc",
+                parse_mode="HTML",
                 reply_markup=get_main_menu()
             )
             answer_callback(callback_id)
+            return
         
-        # UC по ID
-        elif data == "uc_by_id":
-            edit_message(
-                chat_id,
-                message_id,
-                "🎮 Выберите количество UC:",
-                reply_markup=get_uc_menu()
-            )
-            answer_callback(callback_id)
-        
-        elif data.startswith("uc_"):
-            amount = data.split("_")[1]
-            send_message(
-                chat_id,
-                f"✅ Вы выбрали {amount} UC\nОжидайте подтверждения от оператора."
-            )
-            answer_callback(callback_id)
-        
-        # Купить КОД
-        elif data == "buy_code":
-            edit_message(
-                chat_id,
-                message_id,
-                "💬 Выберите код для покупки:",
-                reply_markup=get_code_menu()
-            )
-            answer_callback(callback_id)
-        
-        elif data.startswith("code_"):
-            amount = data.split("_")[1]
-            send_message(
-                chat_id,
-                f"✅ Добавлено {amount} UC в корзину!"
-            )
-            answer_callback(callback_id)
-        
-        # Информация
-        elif data == "info":
-            info_text = (
-                "Наш бот работает специально для вас "
+        # ===== ИНФОРМАЦИЯ =====
+        if data == "info":
+            text = (
+                "ℹ️ <b>KRANZAYY UC BOT</b>\n\n"
+                "Наш бот работает для вас "
                 '<tg-emoji emoji-id="5346301287774323405">❤️‍🔥</tg-emoji>\n\n'
                 '<tg-emoji emoji-id="5330051403563943171">🌟</tg-emoji>'
                 '<tg-emoji emoji-id="5330245862503236304">✨</tg-emoji>'
                 '<tg-emoji emoji-id="5330245862503236304">✨</tg-emoji>'
                 '<tg-emoji emoji-id="5327866716909229540">💫</tg-emoji>\n\n'
-                "Наши ресурсы: "
-                '<tg-emoji emoji-id="5231102735817918643">📌</tg-emoji>\n\n'
-                '<tg-emoji emoji-id="5318970495314436977">🛒</tg-emoji> Магазин - https://t.me/kranzayyuc\n'
-                '<tg-emoji emoji-id="5931395439738755762">📢</tg-emoji> Телеграмм канал - https://t.me/KRANZAYY_STORE\n'
-                '<tg-emoji emoji-id="5357432498680767940">🏪</tg-emoji> Метро шоп - https://t.me/MetroShop_Kranzayy\n'
-                '<tg-emoji emoji-id="5219809810802829750">⭐</tg-emoji> Отзывы - https://t.me/Kranzayy_OTZ\n\n'
-                '<tg-emoji emoji-id="5465556444931718975">💎</tg-emoji>'
-                '<tg-emoji emoji-id="5465556444931718975">💎</tg-emoji>'
-                '<tg-emoji emoji-id="5465556444931718975">💎</tg-emoji>'
-                '<tg-emoji emoji-id="5465556444931718975">💎</tg-emoji>\n\n'
-                '<tg-emoji emoji-id="5971889748615105853">🆘</tg-emoji> Техническая поддержка: @M_K_B_59'
+                "📌 Наши ресурсы:\n"
+                "🛒 Магазин - https://t.me/kranzayyuc\n"
+                "📢 Канал - https://t.me/KRANZAYY_STORE\n"
+                "⭐ Отзывы - https://t.me/Kranzayy_OTZ\n\n"
+                "🆘 Поддержка: @M_K_B_59"
             )
-            send_message(
+            edit_message(chat_id, message_id, text, parse_mode="HTML", reply_markup=get_main_menu())
+            answer_callback(callback_id)
+            return
+        
+        # ===== ПРОМОКОДЫ =====
+        if data == "promocodes":
+            edit_message(
                 chat_id,
-                info_text,
-                parse_mode="HTML"
+                message_id,
+                "🎫 <b>Промокоды</b>\n\n"
+                "🔹 KRANZAYY10 - скидка 10%\n"
+                "🔹 KRANZAYY20 - скидка 20% (от 5000₽)",
+                parse_mode="HTML",
+                reply_markup=get_main_menu()
             )
             answer_callback(callback_id)
+            return
         
-        else:
-            answer_callback(callback_id, "Неизвестная команда")
+        # ===== ИНТЕРНЕТ =====
+        if data == "unlimited_internet":
+            edit_message(
+                chat_id,
+                message_id,
+                "🌐 <b>Интернет без ограничений</b>\n\n"
+                "🔹 Безлимит - 999₽/мес\n"
+                "🔹 100 ГБ - 499₽\n"
+                "🔹 500 ГБ - 1499₽\n\n"
+                "📞 @M_K_B_59",
+                parse_mode="HTML",
+                reply_markup=get_main_menu()
+            )
+            answer_callback(callback_id)
+            return
+        
+        # ===== ОТКРЫТЬ ПРИЛОЖЕНИЕ =====
+        if data == "open_app":
+            answer_callback(callback_id, "🚀 Приложение открывается...")
+            send_message(chat_id, "📱 Приложение KRANZAYY\n\nСкачайте для быстрого заказа!", reply_markup=get_main_menu())
+            return
+        
+        # ===== ОПЛАТА =====
+        if data.startswith("payment_"):
+            method = data.split("_")[1]
+            names = {"sbp1": "СБП №1", "sbp2": "СБП №2", "card1": "Карта №1", "card2": "Карта №2", "foreign": "Иностранные"}
+            user_data[user_id]["temp"]["payment_method"] = names.get(method, "Неизвестно")
+            cart = user_data[user_id]["cart"]
+            total_uc, total_price = get_cart_total(cart)
+            text = (
+                f"✅ Выбран: {names.get(method)}\n\n"
+                f"🆔 PUBG ID: {user_data[user_id]['temp'].get('pubg_id', '—')}\n"
+                f"💰 Сумма: {total_price:.2f}₽\n\n"
+                f"❗ Если не открывается приложение банка — используйте QR-код"
+            )
+            edit_message(chat_id, message_id, text, parse_mode="HTML", reply_markup=get_confirm_menu())
+            answer_callback(callback_id)
+            return
+        
+        if data == "another_method":
+            cart = user_data[user_id]["cart"]
+            total_uc, total_price = get_cart_total(cart)
+            text = (
+                f"💳 Выберите способ:\n\n"
+                f"🆔 PUBG ID: {user_data[user_id]['temp'].get('pubg_id', '—')}\n"
+                f"💰 Сумма: {total_price:.2f}₽"
+            )
+            edit_message(chat_id, message_id, text, reply_markup=get_payment_menu())
+            answer_callback(callback_id)
+            return
+        
+        if data == "go_to_payment":
+            cart = user_data[user_id]["cart"]
+            total_uc, total_price = get_cart_total(cart)
+            method = user_data[user_id]["temp"].get("payment_method", "—")
+            pubg_id = user_data[user_id]["temp"].get("pubg_id", "—")
+            nickname = user_data[user_id]["temp"].get("nickname", "—")
+            
+            text = f"💳 <b>Оплата</b>\n\n🔹 {method}\n🆔 {pubg_id}\n👤 {nickname}\n💰 {total_price:.2f}₽\n\n📦 Товары:\n"
+            for k, v in cart.items():
+                text += f"• {k} UC x {v} = {UC_PRICES.get(k, 0) * v:.2f}₽\n"
+            text += f"\n⏳ После оплаты пришлите скриншот: @M_K_B_59"
+            
+            send_message(chat_id, text, parse_mode="HTML", reply_markup=get_main_menu())
+            user_data[user_id]["cart"] = {}
+            user_data[user_id]["temp"] = {}
+            answer_callback(callback_id, "✅ Инструкция отправлена!")
+            return
+        
+        # ===== ЧАЕВЫЕ =====
+        if data.startswith("tip_"):
+            tip_type = data.split("_")[1]
+            if tip_type == "custom":
+                user_data[user_id]["step"] = "waiting_tip"
+                answer_callback(callback_id)
+                send_message(chat_id, "✏️ Сколько ₽ на чай?", reply_markup=get_cancel_menu())
+                return
+            if tip_type == "skip":
+                tip = 0
+                answer_callback(callback_id, "⏭ Пропущено")
+            else:
+                tip = float(tip_type)
+                answer_callback(callback_id, f"✅ +{tip}₽")
+            
+            cart = user_data[user_id]["cart"]
+            total_uc, total_price = get_cart_total(cart)
+            send_message(
+                chat_id,
+                f"✅ Чаевые {tip:.2f}₽\n💰 Итого: {total_price + tip:.2f}₽",
+                reply_markup=get_confirm_menu()
+            )
+            return
+        
+        # ===== ОТМЕНА =====
+        if data == "cancel_order":
+            user_data[user_id]["step"] = "main"
+            user_data[user_id]["temp"] = {}
+            edit_message(chat_id, message_id, "❌ Отменено", reply_markup=get_main_menu())
+            answer_callback(callback_id)
+            return
+        
+        # ===== НАЗАД В КОРЗИНУ =====
+        if data == "back_to_cart":
+            user_data[user_id]["step"] = "main"
+            cart = user_data[user_id]["cart"]
+            total_uc, total_price = get_cart_total(cart)
+            text = "🛒 Корзина:\n\n" + "\n".join([f"• {k} UC x {v} = {UC_PRICES.get(k, 0) * v:.2f}₽" for k, v in cart.items()]) if cart else "Пусто"
+            text += f"\n\n📦 Итого: {total_uc} UC — {total_price:.2f}₽" if cart else ""
+            edit_message(chat_id, message_id, text, reply_markup=get_cart_menu())
+            answer_callback(callback_id)
+            return
+        
+        # ===== НЕИЗВЕСТНО =====
+        answer_callback(callback_id, "❌ Неизвестная команда")
 
-# ========== ПОЛЛИНГ ==========
+def get_cart_total(cart):
+    total_uc = sum(int(k) * v for k, v in cart.items())
+    total_price = sum(UC_PRICES.get(k, 0) * v for k, v in cart.items())
+    return total_uc, total_price
 
+# ========== ЗАПУСК ==========
 def main():
     offset = None
-    print("🚀 Бот запущен и слушает обновления...")
-    
+    print("🚀 Бот KRANZAYY UC BOT запущен!")
     while True:
         try:
             url = f"{BASE_URL}/getUpdates"
             params = {"timeout": 30, "offset": offset}
             response = requests.get(url, params=params).json()
-            
-            if response["ok"]:
-                for update in response["result"]:
+            if response.get("ok"):
+                for update in response.get("result", []):
                     handle_update(update)
                     offset = update["update_id"] + 1
-            
             time.sleep(0.5)
-            
         except Exception as e:
             print(f"❌ Ошибка: {e}")
             time.sleep(5)
