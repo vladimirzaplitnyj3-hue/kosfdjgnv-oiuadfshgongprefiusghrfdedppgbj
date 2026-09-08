@@ -22,7 +22,7 @@ BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 PHOTO_URL = "https://i.ibb.co/67pwkmfb/IMG-3088.jpg"
 OWNER_ID = 6555825110
 
-# ========== ВСЕ ID ПРЕМИУМ-ЭМОДЗИ ==========
+# ========== ID ПРЕМИУМ-ЭМОДЗИ ==========
 E_UC = "5318970495314436977"
 E_STAR = "5316970857325687050"
 E_HEART = "5346301287774323405"
@@ -43,7 +43,7 @@ E_CROSS = "5285032475490273112"
 E_CART = "5310169226856644648"
 E_BACK = "5310076249404621168"
 E_INFO = "5310080279764762661"
-E_WELCOME = "5318970495314436977"  # ДОБАВЛЕНО!
+E_WELCOME = "5318970495314436977"
 E_WARNING = "5310076249404621168"
 E_TIME = "5327866716909229540"
 E_MONEY = "5318970495314436977"
@@ -85,7 +85,6 @@ def send_message(chat_id, text, reply_markup=None, parse_mode="HTML"):
     
     result = api_request("sendMessage", payload)
     
-    # Сохраняем новое сообщение
     if result.get("ok"):
         message_id = result.get("result", {}).get("message_id")
         if message_id:
@@ -102,7 +101,6 @@ def send_photo(chat_id, photo, caption=None, reply_markup=None, parse_mode="HTML
     if reply_markup:
         payload["reply_markup"] = json.dumps(reply_markup)
     
-    # Удаляем предыдущее сообщение
     user_id = str(chat_id)
     if user_id in user_data and user_data[user_id].get("last_message_id"):
         try:
@@ -179,6 +177,20 @@ def format_cart_text(cart):
 # ========== ЦЕНЫ ==========
 UC_PRICES = {"60": 75, "325": 390, "660": 760, "1800": 1990, "3850": 4000, "8100": 8630}
 POPULARITY_PRICES = {"10000": 176, "20000": 307, "30000": 439, "40000": 578, "50000": 715, "60000": 857, "70000": 989, "100000": 1375, "150000": 1994, "200000": 2612, "500000": 6272}
+
+# ========== ФУНКЦИЯ ДЛЯ ГЛАВНОГО МЕНЮ С ФОТО ==========
+def send_main_menu_with_photo(chat_id, caption="👋 Главное меню:"):
+    """Отправка главного меню с фото"""
+    try:
+        send_photo(
+            chat_id,
+            PHOTO_URL,
+            caption=caption,
+            reply_markup=main_menu()
+        )
+    except Exception as e:
+        logger.error(f"Ошибка отправки фото в главном меню: {e}")
+        send_message(chat_id, caption, main_menu())
 
 # ========== КЛАВИАТУРЫ ==========
 
@@ -271,24 +283,7 @@ def handle_update(update):
                 user_data[user_id] = {"cart": {}, "step": "main", "temp": {}, "last_message_id": None}
             
             if text == "/start":
-                try:
-                    send_photo(
-                        chat_id,
-                        PHOTO_URL,
-                        caption=(
-                            f'<tg-emoji emoji-id="{E_WELCOME}">👋</tg-emoji> '
-                            f'Добро пожаловать в KRANZAYY UC BOT!\n\nВыберите действие:'
-                        ),
-                        reply_markup=main_menu()
-                    )
-                except Exception as e:
-                    logger.error(f"Ошибка отправки фото: {e}")
-                    send_message(
-                        chat_id,
-                        f'<tg-emoji emoji-id="{E_WELCOME}">👋</tg-emoji> '
-                        f'Добро пожаловать в KRANZAYY UC BOT!\n\nВыберите действие:',
-                        main_menu()
-                    )
+                send_main_menu_with_photo(chat_id, "👋 Добро пожаловать в KRANZAYY UC BOT!\n\nВыберите действие:")
                 return
             
             if user_data[user_id].get("step") == "waiting_pubg_id":
@@ -362,13 +357,9 @@ def handle_update(update):
             
             answer_callback(cb_id)
             
-            # ---- НАЗАД ----
+            # ---- НАЗАД (ВОЗВРАТ В ГЛАВНОЕ МЕНЮ С ФОТО) ----
             if data == "back_to_main":
-                send_message(
-                    chat_id,
-                    f'<tg-emoji emoji-id="{E_WELCOME}">👋</tg-emoji> Главное меню:',
-                    main_menu()
-                )
+                send_main_menu_with_photo(chat_id, "👋 Главное меню:")
                 return
             
             # ---- UC ----
@@ -630,19 +621,28 @@ def handle_update(update):
                 )
                 return
             
-            # ---- ИНФОРМАЦИЯ ----
+            # ---- ИНФОРМАЦИЯ (С ПРЕМИУМ-ЭМОДЗИ) ----
             if data == "info":
-                text = (
-                    f'<tg-emoji emoji-id="{E_INFO}">ℹ️</tg-emoji> KRANZAYY UC BOT\n\n'
-                    "Наш бот работает для вас ❤️‍🔥\n\n"
-                    "Наши ресурсы:\n"
-                    "🛒 Магазин - https://t.me/kranzayyuc\n"
-                    "📢 Канал - https://t.me/KRANZAYY_STORE\n"
-                    "🏪 Метро шоп - https://t.me/MetroShop_Kranzayy\n"
-                    "⭐ Отзывы - https://t.me/Kranzayy_OTZ\n\n"
-                    "🆘 Техническая поддержка: @M_K_B_59"
+                info_text = (
+                    "Наш бот работает специально для вас "
+                    f'<tg-emoji emoji-id="{E_HEART}">❤️‍🔥</tg-emoji>\n\n'
+                    f'<tg-emoji emoji-id="{E_FIRE}">🌟</tg-emoji>'
+                    f'<tg-emoji emoji-id="{E_SPARKLE}">✨</tg-emoji>'
+                    f'<tg-emoji emoji-id="{E_SPARKLE}">✨</tg-emoji>'
+                    f'<tg-emoji emoji-id="{E_STAR2}">💫</tg-emoji>\n\n'
+                    "Наши ресурсы: "
+                    f'<tg-emoji emoji-id="{E_PIN}">📌</tg-emoji>\n\n'
+                    f'<tg-emoji emoji-id="{E_SHOP}">🛒</tg-emoji> Магазин - https://t.me/kranzayyuc\n'
+                    f'<tg-emoji emoji-id="{E_MEGAPHONE}">📢</tg-emoji> Телеграмм канал - https://t.me/KRANZAYY_STORE\n'
+                    f'<tg-emoji emoji-id="{E_METRO}">🏪</tg-emoji> Метро шоп - https://t.me/MetroShop_Kranzayy\n'
+                    f'<tg-emoji emoji-id="{E_REVIEW}">⭐</tg-emoji> Отзывы - https://t.me/Kranzayy_OTZ\n\n'
+                    f'<tg-emoji emoji-id="{E_DIAMOND}">💎</tg-emoji>'
+                    f'<tg-emoji emoji-id="{E_DIAMOND}">💎</tg-emoji>'
+                    f'<tg-emoji emoji-id="{E_DIAMOND}">💎</tg-emoji>'
+                    f'<tg-emoji emoji-id="{E_DIAMOND}">💎</tg-emoji>\n\n'
+                    f'<tg-emoji emoji-id="{E_SUPPORT}">🆘</tg-emoji> Техническая поддержка: @M_K_B_59'
                 )
-                send_message(chat_id, text, main_menu(), parse_mode="HTML")
+                send_message(chat_id, info_text, main_menu(), parse_mode="HTML")
                 return
             
             # ---- НЕИЗВЕСТНО ----
