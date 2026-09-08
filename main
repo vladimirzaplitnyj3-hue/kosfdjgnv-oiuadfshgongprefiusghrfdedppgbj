@@ -4,7 +4,7 @@ import time
 import re
 
 # ========== КОНФИГУРАЦИЯ ==========
-BOT_TOKEN = "8830398652:AAFtxT4KfBSaPIJCIfeApo452ve-wRxiq7Q"
+BOT_TOKEN = "8833181446:AAFqiKedQpDm04CYP6tg4vb0MjH-k3M4GUw"
 BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 PHOTO_URL = "https://i.ibb.co/67pwkmfb/IMG-3088.jpg"
 
